@@ -16,9 +16,11 @@ __pycache__/
 .DS_Store
 Thumbs.db
 
-# Documentation & Internal Documents
+# Documentation & Internal Documents / Generator Scripts
 Docs/
 docs/
+generate_docs.py
+generate_unified_doc.py
 
 # Runtime / Generated Data
 VectorDB/

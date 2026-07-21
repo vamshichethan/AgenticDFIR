@@ -91,8 +91,6 @@ AI-Cyber-Forensics-Workshop/
 │   └── style.css                # Custom UI styling & themes
 ├── Evidence/                    # Sample evidence files & logs for analysis
 ├── gui_app.py                   # FastAPI application & REST endpoint definitions
-├── generate_docs.py             # Documentation generation utility
-├── generate_unified_doc.py      # DOCX report consolidation script
 ├── requirements.txt             # Python dependencies
 ├── start.bat                    # 1-Click launcher script for Windows
 ├── stop.bat                     # Shutdown script to stop server & processes
