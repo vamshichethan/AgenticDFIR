@@ -16,6 +16,10 @@ __pycache__/
 .DS_Store
 Thumbs.db
 
+# Documentation & Internal Documents
+Docs/
+docs/
+
 # Runtime / Generated Data
 VectorDB/
 Evidence_Backup/
