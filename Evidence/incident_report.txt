@@ -1,0 +1,39 @@
+============================================================
+CYBER SECURITY INCIDENT REPORT
+============================================================
+
+Incident ID      : IR-2026-0710
+Reported By      : Security Operations Center (SOC)
+Date             : 07 July 2026
+Priority         : High
+
+Summary
+-------
+
+At approximately 14:25 IST, multiple failed VPN login attempts were detected
+for the user account "j.smith". A successful VPN login was established from
+the public IP address 203.45.18.101 after five failed authentication attempts.
+
+Within fifteen minutes of the successful VPN login, the Finance Server
+(SRV-FIN-01) initiated several outbound HTTPS connections to an external
+address.
+
+SOC analysts suspect unauthorized access using compromised credentials.
+
+Affected Systems
+
+- VPN Gateway
+- SRV-FIN-01
+- Finance Database
+
+Evidence Collected
+
+- VPN Logs
+- Firewall Logs
+- Windows/Linux System Logs
+- Email Communications
+- Meeting Notes
+
+Investigation Status
+
+Open

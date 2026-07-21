@@ -1,0 +1,24 @@
+INVOICE
+
+Invoice Number : INV-2026-001
+Date           : 08 July 2026
+
+Customer:
+ABC Technologies Pvt. Ltd.
+
+Description
+------------------------------------------
+AI Cyber Forensics Workshop Material
+
+Quantity : 25
+Unit Price : INR 1,000
+
+Total : INR 25,000
+
+Payment Status : Pending
+
+------------------------------------------------------------------
+FORENSIC NOTE:
+This document is fictional and intended solely for workshop
+investigation exercises.
+------------------------------------------------------------------

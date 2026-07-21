@@ -1,0 +1,15 @@
+chromadb
+fastapi
+langchain
+langchain-chroma
+langchain-community
+langchain-core
+langchain-ollama
+langchain-text-splitters
+pydantic
+psutil
+python-multipart
+requests
+uvicorn
+aiofiles
+python-docx

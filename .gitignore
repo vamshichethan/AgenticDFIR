@@ -1,0 +1,24 @@
+# Executables and Large Installer Files
+*.exe
+OllamaSetup.exe
+
+# Python & Virtual Environments
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+
+# IDE & OS Files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Runtime / Generated Data
+VectorDB/
+Evidence_Backup/
+Logs/
+dummy_logs/
+Hashes/

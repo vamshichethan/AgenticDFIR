@@ -1,0 +1,18 @@
+2026-07-07 14:00:01 systemd[1]: Starting system activity accounting tool...
+2026-07-07 14:00:01 systemd[1]: Finished system activity accounting tool.
+2026-07-07 14:05:00 CRON[1284]: (root) CMD (command -v debian-sa1 > /dev/null && debian-sa1 1 1)
+2026-07-07 14:15:22 ntpdate[1311]: step time server 162.159.200.1 offset -0.001245 sec
+2026-07-07 14:20:35 SRV-FIN-01 sshd[1402]: Connection from 10.10.1.5 port 54320 on SSH bridge
+2026-07-07 14:20:35 SRV-FIN-01 sshd[1402]: SSH login accepted for user j.smith from 10.10.1.5
+2026-07-07 14:21:10 SRV-FIN-01 systemd-logind[402]: New session 43 of user j.smith.
+2026-07-07 14:22:17 SRV-FIN-01 bash[1421]: finance_export.sh executed by j.smith
+2026-07-07 14:22:18 SRV-FIN-01 postgres[1425]: query: SELECT * FROM billing_details LIMIT 10000;
+2026-07-07 14:22:50 SRV-FIN-01 postgres[1425]: query: SELECT * FROM transactions_2026;
+2026-07-07 14:23:51 SRV-FIN-01 bash[1430]: zip -r archive.zip /tmp/finance_export/
+2026-07-07 14:23:52 SRV-FIN-01 kernel: archive.zip created, size: 45.2 MB
+2026-07-07 14:24:12 SRV-FIN-01 curl[1445]: HTTPS connection established to 198.51.100.20
+2026-07-07 14:31:10 SRV-FIN-01 curl[1445]: archive.zip upload completed, HTTP 200 OK
+2026-07-07 14:35:44 SRV-FIN-01 sshd[1402]: Received disconnect from 10.10.1.5: 11: user closed connection
+2026-07-07 14:35:44 SRV-FIN-01 sshd[1402]: SSH session closed for user j.smith
+2026-07-07 14:35:44 SRV-FIN-01 systemd-logind[402]: Removed session 43.
+2026-07-07 14:40:15 SRV-FIN-01 ssh[1512]: Connect to 45.33.18.7 port 22 failed: Connection refused

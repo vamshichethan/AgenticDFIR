@@ -1,0 +1,18 @@
+*** SAMPLE INCIDENT NOTE ***
+
+This document is part of a cybersecurity training exercise.
+
+It simulates the type of note an investigator might recover during
+a digital forensic investigation. No malicious software has been
+executed, and no files have been encrypted.
+
+Objectives for investigators:
+- Preserve the file.
+- Calculate its SHA-256 hash.
+- Record metadata.
+- Include it in the investigation timeline.
+
+------------------------------------------------------------------
+FORENSIC TRAINING ARTIFACT
+Generated for AI Cyber Forensics Workshop
+------------------------------------------------------------------

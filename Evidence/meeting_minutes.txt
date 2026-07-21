@@ -1,0 +1,32 @@
+============================================================
+SECURITY TEAM MEETING MINUTES
+============================================================
+
+Meeting Date : 08 July 2026
+
+Attendees
+
+- Incident Response Team
+- SOC Manager
+- Network Administrator
+- Digital Forensics Team
+
+Agenda
+
+1. Review suspicious VPN activity.
+2. Correlate firewall events.
+3. Examine Finance Server logs.
+4. Preserve digital evidence.
+5. Prepare executive report.
+
+Action Items
+
+- Verify user authentication logs.
+- Analyze outbound network connections.
+- Calculate SHA256 hashes of collected evidence.
+- Build investigation timeline.
+
+Meeting Conclusion
+
+Initial evidence indicates possible credential compromise.
+Further forensic analysis is required.

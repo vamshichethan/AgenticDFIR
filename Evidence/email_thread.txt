@@ -1,0 +1,22 @@
+============================================================
+EMAIL COMMUNICATION
+============================================================
+
+From: SOC Manager
+To: Digital Forensics Team
+Date: 07 July 2026 15:30 IST
+
+Subject: URGENT - Investigate Finance Server
+
+Team,
+
+We observed unusual VPN activity involving user "j.smith". Shortly after
+authentication, the Finance Server generated outbound HTTPS connections to an
+external IP.
+
+Please preserve all logs, verify timestamps, calculate SHA256 hashes, and
+prepare an incident report.
+
+Regards,
+
+SOC Manager

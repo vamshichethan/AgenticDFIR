@@ -1,0 +1,19 @@
+Subject: Immediate Action Required – Account Verification
+
+Dear Employee,
+
+Our IT department has identified an issue with your corporate account that requires verification. Please review your account information and contact the IT Help Desk if you have any concerns.
+
+This message is part of a cybersecurity awareness exercise. No action is required.
+
+Regards,
+IT Security Team
+
+------------------------------------------------------------------
+FORENSIC NOTE:
+This file is intentionally created as workshop evidence for AI
+Cyber Forensics training.
+Generated using a local LLM (Ollama).
+Timestamp: __________
+Investigator: __________
+------------------------------------------------------------------
