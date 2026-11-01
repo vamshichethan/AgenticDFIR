@@ -1,0 +1,20 @@
+{
+  "generated_at": "2026-11-01 22:02:35",
+  "model_used": "Deterministic DFIR Expert Engine",
+  "case_id": "CASE-2026-DFIR-001",
+  "evidence_files_analyzed": 9,
+  "total_timeline_events": 65,
+  "critical_events": 11,
+  "ioc_summary": {
+    "total_ips": 21,
+    "malicious_ips": [
+      "198.51.100.20",
+      "203.45.18.101",
+      "198.51.100.5",
+      "45.33.18.7"
+    ]
+  },
+  "markdown_path": "/Users/vamshi/Desktop/DFIR/Reports/Investigation_Report.md",
+  "html_path": "/Users/vamshi/Desktop/DFIR/Reports/Investigation_Report.html",
+  "docx_path": "/Users/vamshi/Desktop/DFIR/Reports/Investigation_Report.docx"
+}

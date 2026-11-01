@@ -3,12 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Cyber Forensic Toolkit Dashboard</title>
+    <title>AI Cyber Forensic & Incident Response Platform</title>
     <!-- Material Design Icons -->
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <style>
+        /* Additional Enhanced Forensic Badges and Sub-nav */
+        .badge-critical { background: rgba(220, 38, 38, 0.15); color: #ef4444; border: 1px solid rgba(220, 38, 38, 0.3); padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+        .badge-high { background: rgba(234, 88, 12, 0.15); color: #f97316; border: 1px solid rgba(234, 88, 12, 0.3); padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+        .badge-medium { background: rgba(202, 138, 4, 0.15); color: #eab308; border: 1px solid rgba(202, 138, 4, 0.3); padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+        .badge-low { background: rgba(37, 99, 235, 0.15); color: #3b82f6; border: 1px solid rgba(37, 99, 235, 0.3); padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+        .badge-info { background: rgba(100, 116, 139, 0.15); color: #94a3b8; border: 1px solid rgba(100, 116, 139, 0.3); padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+        .badge-verified { background: rgba(22, 163, 74, 0.15); color: #22c55e; border: 1px solid rgba(22, 163, 74, 0.3); padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+        .badge-tampered { background: rgba(220, 38, 38, 0.2); color: #ef4444; border: 1px solid #ef4444; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; animation: pulse 2s infinite; }
+        
+        .kpi-container { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+        .kpi-card { background: var(--bg-card); border: 1px solid var(--border-glass); border-radius: 12px; padding: 18px; display: flex; align-items: center; gap: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
+        .kpi-icon { width: 48px; height: 48px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 24px; }
+        .kpi-value { font-size: 22px; font-weight: 700; color: var(--color-text-heading); font-family: var(--font-mono); }
+        .kpi-label { font-size: 12px; color: var(--color-text-muted); text-transform: uppercase; font-weight: 600; }
+
+        .sub-tab-bar { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid var(--border-glass); padding-bottom: 10px; }
+        .sub-tab-btn { background: none; border: none; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 600; color: var(--color-text-muted); cursor: pointer; display: flex; align-items: center; gap: 6px; }
+        .sub-tab-btn.active { background: rgba(8, 145, 178, 0.1); color: var(--cyan); }
+        .sub-tab-content { display: none; }
+        .sub-tab-content.active { display: block; }
+
+        .search-filter-box { display: flex; gap: 12px; align-items: center; margin-bottom: 16px; }
+        .search-input { flex: 1; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border-glass); background: var(--bg-card); font-size: 13px; color: var(--color-text-heading); }
+        .select-filter { padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border-glass); background: var(--bg-card); font-size: 13px; color: var(--color-text-heading); }
+
+        .mitre-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; margin-top: 14px; }
+        .mitre-card { background: var(--bg-card); border: 1px solid var(--border-glass); border-radius: 8px; padding: 14px; border-left: 4px solid var(--cyan); }
+        .mitre-tactic { font-size: 11px; text-transform: uppercase; color: var(--cyan); font-weight: 700; }
+        .mitre-id { font-family: var(--font-mono); font-size: 12px; font-weight: 700; color: var(--color-text-heading); margin: 4px 0; }
+        .mitre-desc { font-size: 12px; color: var(--color-text-main); line-height: 1.4; }
+        
+        .hex-viewer { font-family: var(--font-mono); font-size: 12px; background: #0f172a; color: #38bdf8; padding: 16px; border-radius: 8px; overflow-x: auto; white-space: pre; line-height: 1.5; max-height: 480px; }
+        .strings-viewer { font-family: var(--font-mono); font-size: 12px; background: var(--bg-card); border: 1px solid var(--border-glass); padding: 12px; border-radius: 8px; max-height: 400px; overflow-y: auto; }
+        .string-item { padding: 4px 8px; border-bottom: 1px solid rgba(0,0,0,0.04); }
+        .string-item:hover { background: rgba(8, 145, 178, 0.05); }
+
+        .action-chip-btn { background: var(--bg-card); border: 1px solid var(--border-glass); padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; cursor: pointer; color: var(--color-text-main); display: inline-flex; align-items: center; gap: 6px; margin: 4px 2px; }
+        .action-chip-btn:hover { border-color: var(--cyan); color: var(--cyan); }
+    </style>
 </head>
 <body>
     <div class="app-container">
@@ -18,8 +58,8 @@
                 <img src="csrl.png" alt="CSRL Logo" class="brand-logo">
                 <div class="brand-text">
                     <h2>Forensic Toolkit</h2>
-                    <span>OFFLINE AI ASSISTANT</span>
-                    <span class="developer-credit">Developed by Cyber Security Research Lab, NITK, Surathkal</span>
+                    <span>OFFLINE AI ASSISTANT v2.0</span>
+                    <span class="developer-credit">CSRL Workshop & DFIR Engineering</span>
                 </div>
             </div>
             
@@ -28,13 +68,25 @@
                     <span class="material-icons-round">dashboard</span>
                     <span>Dashboard</span>
                 </a>
-                <a href="#" class="nav-item" data-tab="artifacts">
-                    <span class="material-icons-round">folder_open</span>
-                    <span>Artifact Discovery</span>
+                <a href="#" class="nav-item" data-tab="live-forensics">
+                    <span class="material-icons-round">memory</span>
+                    <span>Live Host Forensics</span>
                 </a>
-                <a href="#" class="nav-item" data-tab="operations">
+                <a href="#" class="nav-item" data-tab="timeline">
+                    <span class="material-icons-round">timeline</span>
+                    <span>Super-Timeline</span>
+                </a>
+                <a href="#" class="nav-item" data-tab="evidence">
                     <span class="material-icons-round">fingerprint</span>
-                    <span>Hashes & Timeline</span>
+                    <span>Evidence & Custody</span>
+                </a>
+                <a href="#" class="nav-item" data-tab="threat-intel">
+                    <span class="material-icons-round">security</span>
+                    <span>IOC & Threat Intel</span>
+                </a>
+                <a href="#" class="nav-item" data-tab="inspector">
+                    <span class="material-icons-round">find_in_page</span>
+                    <span>Hex & Strings Viewer</span>
                 </a>
                 <a href="#" class="nav-item" data-tab="ai-copilot">
                     <span class="material-icons-round">psychology</span>
@@ -50,7 +102,7 @@
                 <div class="service-status">
                     <div class="status-indicator" id="ollama-status-indicator"></div>
                     <div class="status-details">
-                        <p class="service-name">Ollama Local LLM</p>
+                        <p class="service-name">Ollama LLM Engine</p>
                         <p class="status-text" id="ollama-status-text">Checking...</p>
                     </div>
                 </div>
@@ -62,13 +114,13 @@
             <!-- Header Bar -->
             <header class="top-header">
                 <div class="header-title">
-                    <h1 id="page-title">Security Dashboard</h1>
-                    <p class="subtitle" id="page-subtitle">Real-time Windows system metrics & services status</p>
+                    <h1 id="page-title">Forensic Operations Dashboard</h1>
+                    <p class="subtitle" id="page-subtitle">Real-time host metrics, evidence integrity & AI incident response</p>
                 </div>
                 <div class="system-quick-stats">
                     <div class="quick-stat-pill">
                         <span class="stat-label">OS:</span>
-                        <span class="stat-val" id="quick-os">Windows</span>
+                        <span class="stat-val" id="quick-os">-</span>
                     </div>
                     <div class="quick-stat-pill">
                         <span class="stat-label">CPU:</span>
@@ -81,14 +133,53 @@
                 </div>
             </header>
 
-            <!-- Tab: Dashboard -->
+            <!-- TAB 1: DASHBOARD -->
             <section id="tab-dashboard" class="tab-pane active">
+                <div class="kpi-container">
+                    <div class="kpi-card">
+                        <div class="kpi-icon" style="background: rgba(8, 145, 178, 0.1); color: var(--cyan);">
+                            <span class="material-icons-round">folder</span>
+                        </div>
+                        <div>
+                            <div class="kpi-value" id="kpi-evidence-count">9</div>
+                            <div class="kpi-label">Evidence Files</div>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon" style="background: rgba(124, 58, 237, 0.1); color: var(--purple);">
+                            <span class="material-icons-round">event_note</span>
+                        </div>
+                        <div>
+                            <div class="kpi-value" id="kpi-events-count">65</div>
+                            <div class="kpi-label">Correlated Events</div>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon" style="background: rgba(220, 38, 38, 0.1); color: var(--danger);">
+                            <span class="material-icons-round">warning</span>
+                        </div>
+                        <div>
+                            <div class="kpi-value" id="kpi-critical-count">11</div>
+                            <div class="kpi-label">Critical Incidents</div>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon" style="background: rgba(22, 163, 74, 0.1); color: var(--green);">
+                            <span class="material-icons-round">verified_user</span>
+                        </div>
+                        <div>
+                            <div class="kpi-value" id="kpi-integrity-status">Intact</div>
+                            <div class="kpi-label">Evidence Integrity</div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="grid-layout">
-                    <!-- Card: Host Info -->
+                    <!-- Host Info Card -->
                     <div class="card glassmorphic col-span-2">
                         <div class="card-header">
-                            <span class="material-icons-round card-header-icon text-cyan">info</span>
-                            <h3>System Information</h3>
+                            <span class="material-icons-round card-header-icon text-cyan">computer</span>
+                            <h3>Target Host Profiling</h3>
                         </div>
                         <div class="card-body">
                             <div class="info-grid">
@@ -101,12 +192,20 @@
                                     <span class="info-value" id="sys-os">-</span>
                                 </div>
                                 <div class="info-item">
-                                    <span class="info-label">OS Version</span>
+                                    <span class="info-label">Kernel / Build</span>
                                     <span class="info-value" id="sys-version">-</span>
                                 </div>
                                 <div class="info-item">
                                     <span class="info-label">Architecture</span>
                                     <span class="info-value" id="sys-arch">-</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">System Uptime</span>
+                                    <span class="info-value" id="sys-uptime">-</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Boot Timestamp</span>
+                                    <span class="info-value" id="sys-boot-time">-</span>
                                 </div>
                                 <div class="info-item col-span-2">
                                     <span class="info-label">Processor</span>
@@ -116,36 +215,34 @@
                         </div>
                     </div>
 
-                    <!-- Card: Resource Usage Charts -->
+                    <!-- Hardware Telemetry -->
                     <div class="card glassmorphic">
                         <div class="card-header">
                             <span class="material-icons-round card-header-icon text-purple">memory</span>
-                            <h3>Hardware Utilization</h3>
+                            <h3>Resource Utilization</h3>
                         </div>
                         <div class="card-body resource-usage">
                             <div class="progress-section">
                                 <div class="progress-labels">
-                                    <span>CPU Usage (<span id="cpu-cores">0</span> Logical Cores)</span>
+                                    <span>CPU (<span id="cpu-cores">0</span> Cores)</span>
                                     <span id="cpu-percent-lbl">0%</span>
                                 </div>
                                 <div class="progress-bar-container">
                                     <div class="progress-bar bg-cyan" id="cpu-progress-bar" style="width: 0%"></div>
                                 </div>
                             </div>
-
                             <div class="progress-section">
                                 <div class="progress-labels">
-                                    <span>Memory Usage (<span id="ram-used">0</span> / <span id="ram-total">0</span> GB)</span>
+                                    <span>RAM (<span id="ram-used">0</span> / <span id="ram-total">0</span> GB)</span>
                                     <span id="ram-percent-lbl">0%</span>
                                 </div>
                                 <div class="progress-bar-container">
                                     <div class="progress-bar bg-purple" id="ram-progress-bar" style="width: 0%"></div>
                                 </div>
                             </div>
-
                             <div class="progress-section">
                                 <div class="progress-labels">
-                                    <span>Primary Disk Space (<span id="disk-free">0</span> GB free)</span>
+                                    <span>Storage (<span id="disk-free">0</span> GB free)</span>
                                     <span id="disk-percent-lbl">0%</span>
                                 </div>
                                 <div class="progress-bar-container">
@@ -155,318 +252,478 @@
                         </div>
                     </div>
 
-                    <!-- Card: Ollama Running Processes -->
-                    <div class="card glassmorphic col-span-2">
+                    <!-- AI Engine Status Card -->
+                    <div class="card glassmorphic col-span-3">
                         <div class="card-header">
-                            <span class="material-icons-round card-header-icon text-green">terminal</span>
-                            <h3>Active Ollama Processes</h3>
-                        </div>
-                        <div class="card-body">
-                            <div class="table-container">
-                                <table id="processes-table">
-                                    <thead>
-                                        <tr>
-                                            <th>PID</th>
-                                            <th>Process Name</th>
-                                            <th>CPU %</th>
-                                            <th>RAM (MB)</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="processes-tbody">
-                                        <tr>
-                                            <td colspan="4" class="text-center text-muted">No processes loaded</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Card: Ollama Port info -->
-                    <div class="card glassmorphic">
-                        <div class="card-header">
-                            <span class="material-icons-round card-header-icon text-yellow">lan</span>
-                            <h3>Network Sockets</h3>
-                        </div>
-                        <div class="card-body network-body">
-                            <div class="network-port-box">
-                                <div class="port-num">11434</div>
-                                <div class="port-desc">Ollama default listening port</div>
-                            </div>
-                            <div class="port-status-details">
-                                <span class="status-dot green" id="port-status-dot"></span>
-                                <span id="port-status-text">Checking socket status...</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Tab: Artifact Discovery -->
-            <section id="tab-artifacts" class="tab-pane">
-                <div class="grid-layout">
-                    <!-- Card: Installation Details -->
-                    <div class="card glassmorphic col-span-2">
-                        <div class="card-header">
-                            <span class="material-icons-round card-header-icon text-cyan">settings</span>
-                            <h3>Ollama Environment Details</h3>
+                            <span class="material-icons-round card-header-icon text-green">smart_toy</span>
+                            <h3>AI Engine & Offline LLM Runtime</h3>
                         </div>
                         <div class="card-body">
                             <div class="info-grid">
-                                <div class="info-item col-span-2">
-                                    <span class="info-label">Executable Location</span>
-                                    <span class="info-value font-mono" id="art-exe">-</span>
+                                <div class="info-item">
+                                    <span class="info-label">Daemon Service</span>
+                                    <span class="info-value" id="ollama-daemon-status">Checking...</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Installed Version</span>
+                                    <span class="info-value" id="ollama-version-val">-</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Binary Location</span>
+                                    <span class="info-value" id="ollama-path-val">-</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Default LLM Model</span>
+                                    <span class="info-value font-mono">llama3.2:1b (Offline RAG)</span>
                                 </div>
                                 <div class="info-item col-span-2">
-                                    <span class="info-label">Model Cache Directory</span>
-                                    <span class="info-value font-mono" id="art-dir">-</span>
+                                    <span class="info-label">Installed Local Models</span>
+                                    <span class="info-value" id="installed-models-badges">Scanning...</span>
                                 </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Card: Cache Summary -->
-                    <div class="card glassmorphic">
-                        <div class="card-header">
-                            <span class="material-icons-round card-header-icon text-purple">storage</span>
-                            <h3>Cache Storage</h3>
-                        </div>
-                        <div class="card-body storage-summary">
-                            <div class="stat-huge" id="art-total-files">0</div>
-                            <div class="stat-label">Model Manifest/Blob files stored locally</div>
-                        </div>
-                    </div>
-
-                    <!-- Card: Cached Files Listing -->
-                    <div class="card glassmorphic col-span-3">
-                        <div class="card-header">
-                            <span class="material-icons-round card-header-icon text-green">list_alt</span>
-                            <h3>Model Cache Files (Blob Repository)</h3>
-                        </div>
-                        <div class="card-body">
-                            <div class="table-container">
-                                <table>
-                                    <thead>
-                                        <tr>
-                                            <th>File Name</th>
-                                            <th>Relative Path</th>
-                                            <th>Size (MB)</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="files-tbody">
-                                        <tr>
-                                            <td colspan="3" class="text-center text-muted">No cache files discovered</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
                             </div>
                         </div>
                     </div>
                 </div>
             </section>
 
-            <!-- Tab: Operations -->
-            <section id="tab-operations" class="tab-pane">
-                <div class="grid-layout">
-                    <!-- Control Panel Card -->
-                    <div class="card glassmorphic col-span-3">
-                        <div class="card-header">
-                            <span class="material-icons-round card-header-icon text-cyan">build</span>
-                            <h3>Forensic Investigation Actions</h3>
-                        </div>
-                        <div class="card-body control-buttons-group">
-                            <p class="instructions">1. Click <strong>Compute SHA256 Hashes</strong> to record the baseline. Then manually edit any file in the <code>Evidence/</code> folder. Run hashes again to detect tampering.</p>
-                            <div class="buttons-row">
-                                <button class="btn btn-cyan" id="btn-run-hashes">
-                                    <span class="material-icons-round">fingerprint</span>
-                                    Compute SHA256 Hashes
-                                </button>
-                                <button class="btn btn-purple" id="btn-run-timeline">
-                                    <span class="material-icons-round">schedule</span>
-                                    Build Forensic Timeline
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Card: Evidence & Hashes -->
-                    <div class="card glassmorphic col-span-2">
-                        <div class="card-header">
-                            <span class="material-icons-round card-header-icon text-cyan">grid_view</span>
-                            <h3>Evidence Integrity Verification</h3>
-                        </div>
-                        <div class="card-body">
-                            <div class="table-container">
-                                <table>
-                                    <thead>
-                                        <tr>
-                                            <th>File Name</th>
-                                            <th>SHA-256 Checksum</th>
-                                            <th>Status</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="hashes-tbody">
-                                        <tr>
-                                            <td colspan="3" class="text-center text-muted">Hashes not computed yet. Click "Compute SHA256 Hashes".</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Card: Timeline -->
-                    <div class="card glassmorphic">
-                        <div class="card-header">
-                            <span class="material-icons-round card-header-icon text-purple">history</span>
-                            <h3>Chronological File Timeline</h3>
-                        </div>
-                        <div class="card-body">
-                            <div class="timeline-stepper" id="timeline-stepper">
-                                <p class="text-muted text-center">Timeline empty. Click "Build Forensic Timeline".</p>
-                            </div>
-                        </div>
-                    </div>
+            <!-- TAB 2: LIVE HOST FORENSICS -->
+            <section id="tab-live-forensics" class="tab-pane">
+                <div class="sub-tab-bar">
+                    <button class="sub-tab-btn active" data-sub="sub-processes">
+                        <span class="material-icons-round">list_alt</span> Processes & Anomalies (<span id="count-procs">0</span>)
+                    </button>
+                    <button class="sub-tab-btn" data-sub="sub-sockets">
+                        <span class="material-icons-round">router</span> Active Sockets & Ports (<span id="count-sockets">0</span>)
+                    </button>
+                    <button class="sub-tab-btn" data-sub="sub-persistence">
+                        <span class="material-icons-round">history_edu</span> Persistence & Autoruns (<span id="count-autoruns">0</span>)
+                    </button>
+                    <button class="sub-tab-btn" data-sub="sub-users">
+                        <span class="material-icons-round">people</span> Users & Active Sessions
+                    </button>
                 </div>
-            </section>
 
-            <!-- Tab: AI Copilot -->
-            <section id="tab-ai-copilot" class="tab-pane">
-                <div class="grid-layout">
-                    <!-- LLM Configuration Card -->
-                    <div class="card glassmorphic col-span-1">
-                        <div class="card-header">
-                            <span class="material-icons-round card-header-icon text-purple">tune</span>
-                            <h3>Copilot Model Configuration</h3>
+                <!-- Sub-tab: Processes -->
+                <div id="sub-processes" class="sub-tab-content active">
+                    <div class="card glassmorphic">
+                        <div class="card-header" style="justify-content: space-between;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span class="material-icons-round text-cyan">developer_board</span>
+                                <h3>Live Process Table & DFIR Anomaly Scoring</h3>
+                            </div>
+                            <button class="btn btn-outline" id="btn-refresh-procs">
+                                <span class="material-icons-round">refresh</span> Refresh Processes
+                            </button>
                         </div>
                         <div class="card-body">
-                            <div class="form-group">
-                                <label for="model-select">Target Local LLM</label>
-                                <select id="model-select" class="form-control">
-                                    <option value="">Checking local models...</option>
+                            <div class="search-filter-box">
+                                <input type="text" class="search-input" id="proc-search-input" placeholder="Search by process name, PID, user, or anomaly...">
+                                <select class="select-filter" id="proc-filter-select">
+                                    <option value="all">All Processes</option>
+                                    <option value="suspicious">Flagged Suspicious Only</option>
                                 </select>
                             </div>
-                            
-                            <div class="model-meta-info">
-                                <div class="meta-row">
-                                    <span class="lbl">Recommended Model:</span>
-                                    <span class="val text-cyan">llama3.2:1b</span>
-                                </div>
-                                <div class="meta-row">
-                                    <span class="lbl">Query Temperature:</span>
-                                    <span class="val">0.0 (Forensic Accuracy)</span>
-                                </div>
+                            <div class="table-container" style="max-height: 480px;">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>PID</th>
+                                            <th>PPID</th>
+                                            <th>Process Name</th>
+                                            <th>User</th>
+                                            <th>CPU%</th>
+                                            <th>Memory (MB)</th>
+                                            <th>Status</th>
+                                            <th>DFIR Anomaly Assessment</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="procs-table-body">
+                                        <tr><td colspan="8" style="text-align: center;">Loading process tree...</td></tr>
+                                    </tbody>
+                                </table>
                             </div>
-                            
-                            <button class="btn btn-purple btn-full mt-4" id="btn-generate-report">
-                                <span class="material-icons-round">psychology</span>
-                                Generate AI Incident Report
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sub-tab: Sockets -->
+                <div id="sub-sockets" class="sub-tab-content">
+                    <div class="card glassmorphic">
+                        <div class="card-header" style="justify-content: space-between;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span class="material-icons-round text-purple">wifi_tethering</span>
+                                <h3>Active Network Sockets & Foreign Connection Threat Tagging</h3>
+                            </div>
+                            <button class="btn btn-outline" id="btn-refresh-sockets">
+                                <span class="material-icons-round">refresh</span> Refresh Sockets
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-container" style="max-height: 480px;">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Proto</th>
+                                            <th>Local Address</th>
+                                            <th>Remote Address</th>
+                                            <th>State</th>
+                                            <th>Process</th>
+                                            <th>PID</th>
+                                            <th>Threat Classification</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="sockets-table-body">
+                                        <tr><td colspan="7" style="text-align: center;">Scanning network sockets...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sub-tab: Persistence -->
+                <div id="sub-persistence" class="sub-tab-content">
+                    <div class="card glassmorphic">
+                        <div class="card-header">
+                            <span class="material-icons-round text-cyan">schedule</span>
+                            <h3>Discovered Persistence & Autorun Mechanisms</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-container" style="max-height: 480px;">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Type</th>
+                                            <th>Artifact Name</th>
+                                            <th>Filesystem Location</th>
+                                            <th>Last Modified</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="persistence-table-body">
+                                        <tr><td colspan="4" style="text-align: center;">Discovering autorun hooks...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sub-tab: Users -->
+                <div id="sub-users" class="sub-tab-content">
+                    <div class="card glassmorphic">
+                        <div class="card-header">
+                            <span class="material-icons-round text-green">account_circle</span>
+                            <h3>User Accounts & Active Authentication Sessions</h3>
+                        </div>
+                        <div class="card-body" id="users-info-container">
+                            <p>Loading user accounts and active sessions...</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 3: SUPER-TIMELINE -->
+            <section id="tab-timeline" class="tab-pane">
+                <div class="card glassmorphic">
+                    <div class="card-header" style="justify-content: space-between;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span class="material-icons-round text-cyan">alarm</span>
+                            <h3>Chronological Master Super-Timeline & Kill Chain Reconstruction</h3>
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="btn btn-primary" id="btn-rebuild-timeline">
+                                <span class="material-icons-round">play_arrow</span> Correlate Timeline
+                            </button>
+                            <a href="/api/timeline/export/csv" class="btn btn-outline" download>
+                                <span class="material-icons-round">download</span> Export CSV
+                            </a>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="search-filter-box">
+                            <input type="text" class="search-input" id="timeline-search-input" placeholder="Search events by IP, username, keyword (e.g. j.smith, curl, exfil)...">
+                            <select class="select-filter" id="timeline-severity-filter">
+                                <option value="ALL">All Severities</option>
+                                <option value="CRITICAL">🔴 Critical Only</option>
+                                <option value="HIGH">🟠 High Only</option>
+                                <option value="MEDIUM">🟡 Medium Only</option>
+                                <option value="LOW">🔵 Low / Info</option>
+                            </select>
+                            <select class="select-filter" id="timeline-source-filter">
+                                <option value="ALL">All Log Sources</option>
+                                <option value="Firewall">Firewall Logs</option>
+                                <option value="System">System Syslog</option>
+                                <option value="VPN Gateway">VPN Gateway</option>
+                                <option value="Email Communication">Email / SOC Alerts</option>
+                            </select>
+                        </div>
+
+                        <div class="table-container" style="max-height: 520px;">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Timestamp (IST)</th>
+                                        <th>Severity</th>
+                                        <th>Kill Chain Stage</th>
+                                        <th>Log Source</th>
+                                        <th>User</th>
+                                        <th>Source IP</th>
+                                        <th>Destination IP</th>
+                                        <th>Correlated Event Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="timeline-table-body">
+                                    <tr><td colspan="8" style="text-align: center;">Click 'Correlate Timeline' to build master timeline...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 4: EVIDENCE & CHAIN OF CUSTODY -->
+            <section id="tab-evidence" class="tab-pane">
+                <div class="grid-layout">
+                    <!-- Evidence Table -->
+                    <div class="card glassmorphic col-span-3">
+                        <div class="card-header" style="justify-content: space-between;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span class="material-icons-round text-cyan">fingerprint</span>
+                                <h3>Digital Evidence Repository & Cryptographic Integrity Check</h3>
+                            </div>
+                            <div style="display: flex; gap: 8px;">
+                                <button class="btn btn-primary" id="btn-run-hashing">
+                                    <span class="material-icons-round">verified</span> Verify Evidence Hashes
+                                </button>
+                                <button class="btn btn-outline" id="btn-gen-integrity-report">
+                                    <span class="material-icons-round">description</span> Generate Integrity Report
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-container" style="max-height: 360px;">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Filename</th>
+                                            <th>Size</th>
+                                            <th>SHA-256 Checksum</th>
+                                            <th>MD5 Checksum</th>
+                                            <th>Shannon Entropy</th>
+                                            <th>Integrity Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="evidence-table-body">
+                                        <tr><td colspan="6" style="text-align: center;">Loading evidence inventory...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Chain of Custody Card -->
+                    <div class="card glassmorphic col-span-2">
+                        <div class="card-header">
+                            <span class="material-icons-round text-purple">gavel</span>
+                            <h3>Chain of Custody & Custodial Transfer Log</h3>
+                        </div>
+                        <div class="card-body">
+                            <div id="coc-header-info" style="margin-bottom: 12px; font-size: 13px;">
+                                <strong>Case:</strong> CASE-2026-DFIR-001 | <strong>Investigator:</strong> Lead DFIR Specialist
+                            </div>
+                            <div class="table-container" style="max-height: 220px;">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Timestamp</th>
+                                            <th>Released By</th>
+                                            <th>Received By</th>
+                                            <th>Purpose / Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="coc-transfers-body">
+                                        <tr><td colspan="4">Loading custody ledger...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Upload New Evidence Card -->
+                    <div class="card glassmorphic">
+                        <div class="card-header">
+                            <span class="material-icons-round text-green">cloud_upload</span>
+                            <h3>Evidence Ingestion</h3>
+                        </div>
+                        <div class="card-body">
+                            <p style="font-size: 12px; color: var(--color-text-muted); margin-bottom: 12px;">
+                                Upload suspicious files or logs to compute SHA-256/MD5, Shannon entropy, and index into the AI Assistant.
+                            </p>
+                            <input type="file" id="evidence-file-input" style="margin-bottom: 12px; font-size: 12px;">
+                            <button class="btn btn-primary" id="btn-upload-evidence" style="width: 100%;">
+                                <span class="material-icons-round">upload_file</span> Ingest & Hash Artifact
+                            </button>
+                            <div id="upload-status-msg" style="margin-top: 10px; font-size: 12px;"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 5: IOCS & THREAT INTEL -->
+            <section id="tab-threat-intel" class="tab-pane">
+                <div class="grid-layout">
+                    <!-- IOC Table -->
+                    <div class="card glassmorphic col-span-3">
+                        <div class="card-header">
+                            <span class="material-icons-round text-danger">radar</span>
+                            <h3>Discovered Indicators of Compromise (IOCs)</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-container" style="max-height: 300px;">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Indicator (IP / Artifact)</th>
+                                            <th>Threat Level</th>
+                                            <th>Strategic Role</th>
+                                            <th>Forensic Significance</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="ioc-table-body">
+                                        <tr><td colspan="4" style="text-align: center;">Scanning threat indicators...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- MITRE ATT&CK Framework -->
+                    <div class="card glassmorphic col-span-3">
+                        <div class="card-header">
+                            <span class="material-icons-round text-cyan">grid_view</span>
+                            <h3>MITRE ATT&CK Matrix Alignment</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="mitre-grid" id="mitre-cards-container">
+                                <!-- Dynamic MITRE cards -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 6: HEX & STRINGS INSPECTOR -->
+            <section id="tab-inspector" class="tab-pane">
+                <div class="card glassmorphic">
+                    <div class="card-header" style="justify-content: space-between;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span class="material-icons-round text-cyan">visibility</span>
+                            <h3>Forensic Hex Dump & Printable Strings Inspector</h3>
+                        </div>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <select class="select-filter" id="inspector-file-select" style="min-width: 200px;">
+                                <option value="">Select Evidence File...</option>
+                            </select>
+                            <button class="btn btn-outline" id="btn-load-hex">
+                                <span class="material-icons-round">code</span> View Hex
+                            </button>
+                            <button class="btn btn-outline" id="btn-load-strings">
+                                <span class="material-icons-round">text_format</span> Extract Strings
                             </button>
                         </div>
                     </div>
-
-                    <!-- AI Report Card -->
-                    <div class="card glassmorphic col-span-2">
-                        <div class="card-header justify-between">
-                            <div class="header-left">
-                                <span class="material-icons-round card-header-icon text-green">description</span>
-                                <h3>Executive Investigation Report</h3>
-                            </div>
-                            <span class="status-badge" id="report-status-badge">NOT GENERATED</span>
-                        </div>
-                        <div class="card-body markdown-preview-body">
-                            <div id="report-preloader" class="preloader hidden">
-                                <div class="spinner"></div>
-                                <p>Running AI Forensic Threat Synthesis. Please wait...</p>
-                            </div>
-                            <div id="report-content" class="report-content-area text-muted">
-                                Click "Generate AI Incident Report" to load evidence and perform local AI synthesis.
-                            </div>
+                    <div class="card-body">
+                        <div id="inspector-viewer-container">
+                            <p style="text-align: center; color: var(--color-text-muted); padding: 40px;">
+                                Select an evidence file from the dropdown to inspect its raw hex dump or extract printable ASCII strings.
+                            </p>
                         </div>
                     </div>
                 </div>
             </section>
 
-            <!-- Tab: AI Forensic Chatbot (RAG) -->
-            <section id="tab-rag-chatbot" class="tab-pane">
-                <div class="rag-layout">
-                    <!-- RAG Sidebar: Evidence Source List -->
-                    <div class="rag-sidebar glassmorphic">
-                        <div class="sidebar-sec-header">
-                            <span class="material-icons-round">folder_zip</span>
-                            <h3>Evidence Sources</h3>
+            <!-- TAB 7: AI INCIDENT COPILOT -->
+            <section id="tab-ai-copilot" class="tab-pane">
+                <div class="card glassmorphic">
+                    <div class="card-header" style="justify-content: space-between;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span class="material-icons-round text-purple">psychology</span>
+                            <h3>AI Incident Copilot & Executive DFIR Report Generator</h3>
                         </div>
-                        <div class="rag-upload-container">
-                            <label class="btn btn-cyan btn-full upload-label">
-                                <span class="material-icons-round">cloud_upload</span>
-                                Add Evidence File
-                                <input type="file" id="rag-file-input" style="display: none;">
-                            </label>
-                            <div id="rag-upload-status" class="rag-upload-status hidden">
-                                <span class="spinner-btn inline-block">autorenew</span>
-                                <span id="rag-upload-status-text">Uploading...</span>
-                            </div>
-                        </div>
-                        <div class="rag-file-list" id="rag-file-list">
-                            <!-- Populated dynamically via API -->
-                            <div class="text-muted text-center py-4">Loading evidence...</div>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="btn btn-primary" id="btn-generate-ai-report">
+                                <span class="material-icons-round">auto_awesome</span> Generate Incident Report
+                            </button>
+                            <a href="/api/report/download/docx" class="btn btn-outline" download>
+                                <span class="material-icons-round">description</span> Word (.docx)
+                            </a>
+                            <a href="/api/report/download/html" class="btn btn-outline" download target="_blank">
+                                <span class="material-icons-round">html</span> HTML
+                            </a>
+                            <a href="/api/report/download/md" class="btn btn-outline" download>
+                                <span class="material-icons-round">article</span> Markdown
+                            </a>
                         </div>
                     </div>
-
-                    <!-- RAG Chat window -->
-                    <div class="rag-chat-container glassmorphic">
-                        <div class="rag-chat-header">
-                            <div class="chat-header-info">
-                                <span class="material-icons-round chat-logo text-purple">psychology</span>
-                                <div>
-                                    <h3>RAG Incident Assistant</h3>
-                                    <p class="subtitle">Query evidence logs using vector embeddings and local LLM</p>
-                                </div>
-                            </div>
-                            <div class="chat-model-indicator">
-                                <span class="indicator-label">Model:</span>
-                                <select id="rag-model-select" class="rag-select-pill">
-                                    <option value="llama3.2:1b">llama3.2:1b</option>
-                                </select>
+                    <div class="card-body">
+                        <div style="margin-bottom: 14px;">
+                            <span style="font-size: 12px; font-weight: 600; color: var(--color-text-muted);">Quick Forensic Analysis Presets:</span>
+                            <div>
+                                <button class="action-chip-btn" data-preset="report"><span class="material-icons-round" style="font-size: 14px;">summarize</span> Full Incident Report</button>
+                                <button class="action-chip-btn" data-preset="timeline"><span class="material-icons-round" style="font-size: 14px;">history</span> Reconstruct Kill Chain</button>
+                                <button class="action-chip-btn" data-preset="iocs"><span class="material-icons-round" style="font-size: 14px;">security</span> Extract IOCs & C2s</button>
+                                <button class="action-chip-btn" data-preset="remediation"><span class="material-icons-round" style="font-size: 14px;">shield</span> Remediation Action Plan</button>
                             </div>
                         </div>
 
-                        <!-- Messages Panel -->
-                        <div class="rag-messages-area" id="rag-messages-area">
-                            <div class="chat-message ai">
-                                <div class="message-bubble">
-                                    <p>Hello! I am your AI Digital Forensics Assistant, powered by local RAG (Retrieval-Augmented Generation).</p>
-                                    <p>I have scanned the evidence directory and indexed all logs into the vector database. Ask me anything about the incident, VPN logins, firewall events, or suspicious emails.</p>
-                                </div>
-                                <div class="message-meta">
-                                    <span class="meta-time">Assistant</span>
-                                </div>
+                        <div id="ai-report-preview-container" style="background: var(--bg-card); border: 1px solid var(--border-glass); border-radius: 8px; padding: 24px; max-height: 520px; overflow-y: auto; font-size: 13px; line-height: 1.6;">
+                            <p style="text-align: center; color: var(--color-text-muted); padding: 40px;">
+                                Click 'Generate Incident Report' to synthesize evidence with the local AI Copilot.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 8: AI FORENSIC CHATBOT -->
+            <section id="tab-rag-chatbot" class="tab-pane">
+                <div class="card glassmorphic" style="display: flex; flex-direction: column; height: calc(100vh - 160px);">
+                    <div class="card-header" style="justify-content: space-between;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span class="material-icons-round text-cyan">forum</span>
+                            <h3>AI Forensic Assistant (Hybrid RAG)</h3>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 12px; color: var(--color-text-muted);">Model:</span>
+                            <select class="select-filter" id="chat-model-select" style="padding: 4px 10px; font-size: 12px;">
+                                <option value="llama3.2:1b">llama3.2:1b (Local)</option>
+                                <option value="expert-heuristics">Deterministic DFIR Expert</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="card-body" style="flex: 1; display: flex; flex-direction: column; overflow: hidden; padding-bottom: 8px;">
+                        <!-- Suggested Questions -->
+                        <div style="margin-bottom: 10px;">
+                            <button class="action-chip-btn chat-preset-chip" data-q="What IP address exfiltrated the sensitive data?">What IP exfiltrated data?</button>
+                            <button class="action-chip-btn chat-preset-chip" data-q="Analyze the activity of user j.smith.">Analyze user j.smith</button>
+                            <button class="action-chip-btn chat-preset-chip" data-q="What database tables were queried and zipped?">What database tables were stolen?</button>
+                            <button class="action-chip-btn chat-preset-chip" data-q="List all connections blocked by the firewall.">List blocked connections</button>
+                            <button class="action-chip-btn chat-preset-chip" data-q="Map this attack to the MITRE ATT&CK framework.">Map to MITRE ATT&CK</button>
+                        </div>
+
+                        <!-- Chat Messages Window -->
+                        <div id="chat-messages-container" style="flex: 1; overflow-y: auto; padding: 12px; border: 1px solid var(--border-glass); border-radius: 8px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 12px; background: rgba(0,0,0,0.02);">
+                            <div class="chat-message bot" style="background: var(--bg-card); border: 1px solid var(--border-glass); padding: 14px; border-radius: 8px; max-width: 80%;">
+                                <div style="font-weight: 600; color: var(--cyan); margin-bottom: 4px;">AI Forensic Copilot</div>
+                                <div>Welcome to the AI Cyber Forensics Assistant. I am ready to analyze all log files, firewall records, authentication attempts, and database queries from the case repository. How can I assist your investigation?</div>
                             </div>
                         </div>
 
-                        <!-- Typing Indicator -->
-                        <div id="chat-typing-indicator" class="chat-typing-indicator hidden">
-                            <div class="typing-bubble">
-                                <span class="dot"></span>
-                                <span class="dot"></span>
-                                <span class="dot"></span>
-                            </div>
-                            <span class="typing-text">Analyzing evidence & generating response...</span>
-                        </div>
-
-                        <!-- Quick-Start Suggestions -->
-                        <div class="rag-suggestions">
-                            <button class="suggestion-pill" data-question="What ransomware was used in the compromise?">What ransomware was used?</button>
-                            <button class="suggestion-pill" data-question="List all suspicious VPN logins and IP addresses.">VPN login anomalies</button>
-                            <button class="suggestion-pill" data-question="Is there any evidence of data exfiltration or massive downloads?">Data exfiltration check</button>
-                            <button class="suggestion-pill" data-question="Summarize the timeline of firewall blocks.">Firewall block summary</button>
-                        </div>
-
-                        <!-- Input Area -->
-                        <div class="rag-input-container">
-                            <input type="text" id="rag-chat-input" placeholder="Ask a question about the evidence logs..." autocomplete="off">
-                            <button class="btn btn-purple" id="rag-btn-send">
-                                <span class="material-icons-round">send</span>
+                        <!-- Chat Input Box -->
+                        <div style="display: flex; gap: 8px;">
+                            <input type="text" id="chat-query-input" class="search-input" placeholder="Ask a forensic question (e.g. 'How did the attacker gain initial access?')...">
+                            <button class="btn btn-primary" id="btn-send-chat">
+                                <span class="material-icons-round">send</span> Send
                             </button>
                         </div>
                     </div>
@@ -475,11 +732,7 @@
         </main>
     </div>
 
-    <!-- Toast Notification -->
-    <div id="toast" class="toast hidden">
-        <span class="toast-text" id="toast-text">Success!</span>
-    </div>
-    
+    <!-- Application Logic -->
     <script src="app.js"></script>
 </body>
 </html>

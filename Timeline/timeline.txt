@@ -1,9 +1,75 @@
-2026-07-15 08:44:59.534921  email_thread.txt
-2026-07-17 11:23:39.686116  firewall.log
-2026-07-15 08:44:59.531879  incident_report.txt
-2026-07-15 14:24:19.182724  invoice.txt
-2026-07-15 08:44:59.528950  meeting_minutes.txt
-2026-07-15 14:24:19.190730  phishing_email.txt
-2026-07-15 15:31:33.093476  ransomware_note.txt
-2026-07-17 11:26:47.843340  system.log
-2026-07-15 16:30:49.446900  vpn.log
+================================================================================
+AI CYBER FORENSICS - UNIFIED CHRONOLOGICAL MASTER SUPER-TIMELINE
+Generated: 2026-11-01 22:02:35
+Total Correlated Events: 65
+Critical Events: 11 | High: 11
+================================================================================
+
+
+--- DATE: 2026-07-07 ---
+
+2026-07-07 08:00:12  [LOW     ]  [Normal Authentication    ]  VPN LOGIN SUCCESS for user 'a.davis' from IP 192.168.12.34
+2026-07-07 08:15:30  [LOW     ]  [Session Activity         ]  VPN SESSION START for user 'a.davis' from IP N/A
+2026-07-07 09:12:45  [LOW     ]  [Normal Authentication    ]  VPN LOGIN SUCCESS for user 'm.jones' from IP 192.168.12.55
+2026-07-07 09:13:01  [LOW     ]  [Session Activity         ]  VPN SESSION START for user 'm.jones' from IP N/A
+2026-07-07 10:30:15  [LOW     ]  [Normal Authentication    ]  VPN LOGIN SUCCESS for user 'r.wilson' from IP 192.168.12.82
+2026-07-07 10:30:30  [LOW     ]  [Session Activity         ]  VPN SESSION START for user 'r.wilson' from IP N/A
+2026-07-07 11:45:10  [LOW     ]  [Session Activity         ]  VPN SESSION END for user 'a.davis' from IP N/A
+2026-07-07 12:15:02  [LOW     ]  [Normal Authentication    ]  VPN LOGIN SUCCESS for user 's.taylor' from IP 203.0.113.45
+2026-07-07 12:15:22  [LOW     ]  [Session Activity         ]  VPN SESSION START for user 's.taylor' from IP N/A
+2026-07-07 13:02:14  [LOW     ]  [Session Activity         ]  VPN SESSION END for user 'm.jones' from IP N/A
+2026-07-07 13:40:11  [LOW     ]  [Session Activity         ]  VPN SESSION END for user 'r.wilson' from IP N/A
+2026-07-07 14:00:01  [INFO    ]  [System Activity          ]  [localhost] systemd[1]: Starting system activity accounting tool...
+2026-07-07 14:00:01  [INFO    ]  [System Activity          ]  [localhost] systemd[1]: Finished system activity accounting tool.
+2026-07-07 14:00:05  [INFO    ]  [Normal Traffic           ]  Firewall ALLOW TCP from 10.10.15.5:53310 to 8.8.8.8:53 - DNS Query
+2026-07-07 14:00:12  [INFO    ]  [Normal Traffic           ]  Firewall ALLOW TCP from 10.10.15.102:49210 to 104.244.42.1:443 - HTTPS
+2026-07-07 14:02:55  [MEDIUM  ]  [Authentication Anomaly   ]  VPN LOGIN FAILED for user 'admin' from IP 198.51.100.5
+2026-07-07 14:03:10  [MEDIUM  ]  [Authentication Anomaly   ]  VPN LOGIN FAILED for user 'administrator' from IP 198.51.100.5
+2026-07-07 14:03:25  [MEDIUM  ]  [Authentication Anomaly   ]  VPN LOGIN FAILED for user 'root' from IP 198.51.100.5
+2026-07-07 14:05:00  [INFO    ]  [System Activity          ]  [localhost] CRON[1284]: (root) CMD (command -v debian-sa1 > /dev/null && debian-sa1 1 1)
+2026-07-07 14:05:33  [INFO    ]  [Normal Traffic           ]  Firewall ALLOW TCP from 10.10.15.105:51221 to 142.250.190.46:443 - HTTPS
+2026-07-07 14:10:45  [INFO    ]  [Normal Traffic           ]  Firewall ALLOW TCP from 10.10.15.25:38902 to 10.10.10.5:80 - Internal Update
+2026-07-07 14:15:12  [INFO    ]  [Normal Traffic           ]  Firewall ALLOW UDP from 10.10.15.25:123 to 162.159.200.1:123 - NTP
+2026-07-07 14:15:22  [INFO    ]  [System Activity          ]  [localhost] ntpdate[1311]: step time server 162.159.200.1 offset -0.001245 sec
+2026-07-07 14:18:02  [MEDIUM  ]  [Authentication Anomaly   ]  VPN LOGIN FAILED for user 'j.smith' from IP 203.45.18.101
+2026-07-07 14:18:21  [MEDIUM  ]  [Authentication Anomaly   ]  VPN LOGIN FAILED for user 'j.smith' from IP 203.45.18.101
+2026-07-07 14:18:43  [HIGH    ]  [Credential Access / Brute Force]  VPN LOGIN FAILED for user 'j.smith' from IP 203.45.18.101
+2026-07-07 14:19:11  [HIGH    ]  [Credential Access / Brute Force]  VPN LOGIN FAILED for user 'j.smith' from IP 203.45.18.101
+2026-07-07 14:19:54  [HIGH    ]  [Credential Access / Brute Force]  VPN LOGIN FAILED for user 'j.smith' from IP 203.45.18.101
+2026-07-07 14:20:22  [CRITICAL]  [Initial Access           ]  VPN LOGIN SUCCESS for user 'j.smith' from IP 203.45.18.101
+2026-07-07 14:20:35  [INFO    ]  [System Activity          ]  [SRV-FIN-01] sshd[1402]: Connection from 10.10.1.5 port 54320 on SSH bridge
+2026-07-07 14:20:35  [HIGH    ]  [Initial Access           ]  [SRV-FIN-01] sshd[1402]: SSH login accepted for user j.smith from 10.10.1.5
+2026-07-07 14:20:40  [HIGH    ]  [Initial Access           ]  Firewall ALLOW TCP from 203.45.18.101:54320 to 10.10.15.25:22 - SSH Inbound via VPN
+2026-07-07 14:21:03  [LOW     ]  [Session Activity         ]  VPN SESSION START for user 'j.smith' from IP N/A
+2026-07-07 14:21:10  [MEDIUM  ]  [Execution                ]  [SRV-FIN-01] systemd-logind[402]: New session 43 of user j.smith.
+2026-07-07 14:22:15  [INFO    ]  [Normal Traffic           ]  Firewall ALLOW UDP from 10.10.15.25:53 to 8.8.8.8:53 - DNS Query
+2026-07-07 14:22:17  [CRITICAL]  [Collection & Staging     ]  [SRV-FIN-01] bash[1421]: finance_export.sh executed by j.smith
+2026-07-07 14:22:18  [HIGH    ]  [Collection & Staging     ]  [SRV-FIN-01] postgres[1425]: query: SELECT * FROM billing_details LIMIT 10000;
+2026-07-07 14:22:50  [HIGH    ]  [Collection & Staging     ]  [SRV-FIN-01] postgres[1425]: query: SELECT * FROM transactions_2026;
+2026-07-07 14:23:51  [CRITICAL]  [Collection & Staging     ]  [SRV-FIN-01] bash[1430]: zip -r archive.zip /tmp/finance_export/
+2026-07-07 14:23:52  [CRITICAL]  [Collection & Staging     ]  [SRV-FIN-01] kernel: archive.zip created, size: 45.2 MB
+2026-07-07 14:24:12  [CRITICAL]  [Exfiltration             ]  [SRV-FIN-01] curl[1445]: HTTPS connection established to 198.51.100.20
+2026-07-07 14:25:00  [HIGH    ]  [Incident Detection       ]  Incident IR-2026-0710: Suspected compromise of user 'j.smith' credentials and outbound HTTPS exfiltration.
+2026-07-07 14:31:10  [CRITICAL]  [Exfiltration             ]  [SRV-FIN-01] curl[1445]: archive.zip upload completed, HTTP 200 OK
+2026-07-07 14:32:10  [CRITICAL]  [Exfiltration             ]  Firewall ALLOW TCP from 10.10.15.25:49811 to 198.51.100.20:443 - HTTPS Outbound Exfil
+2026-07-07 14:33:15  [CRITICAL]  [Exfiltration             ]  Firewall ALLOW TCP from 10.10.15.25:49812 to 198.51.100.20:443 - HTTPS Outbound Exfil
+2026-07-07 14:34:21  [CRITICAL]  [Exfiltration             ]  Firewall ALLOW TCP from 10.10.15.25:49813 to 198.51.100.20:443 - HTTPS Outbound Exfil
+2026-07-07 14:35:10  [INFO    ]  [Normal Traffic           ]  Firewall ALLOW TCP from 10.10.15.102:49301 to 172.217.16.142:80 - HTTP
+2026-07-07 14:35:44  [INFO    ]  [System Activity          ]  [SRV-FIN-01] sshd[1402]: Received disconnect from 10.10.1.5: 11: user closed connection
+2026-07-07 14:35:44  [MEDIUM  ]  [Execution                ]  [SRV-FIN-01] sshd[1402]: SSH session closed for user j.smith
+2026-07-07 14:35:44  [MEDIUM  ]  [Execution                ]  [SRV-FIN-01] systemd-logind[402]: Removed session 43.
+2026-07-07 14:36:02  [CRITICAL]  [Exfiltration             ]  Firewall ALLOW TCP from 10.10.15.25:49814 to 198.51.100.20:443 - HTTPS Outbound Exfil
+2026-07-07 14:38:12  [INFO    ]  [Normal Traffic           ]  Firewall ALLOW UDP from 10.10.15.5:53311 to 8.8.8.8:53 - DNS Query
+2026-07-07 14:40:15  [HIGH    ]  [Lateral Movement / C2    ]  Firewall DENY TCP from 10.10.15.25:49815 to 45.33.18.7:22 - SSH Outbound Blocked
+2026-07-07 14:40:15  [HIGH    ]  [Lateral Movement / C2    ]  [SRV-FIN-01] ssh[1512]: Connect to 45.33.18.7 port 22 failed: Connection refused
+2026-07-07 14:41:48  [INFO    ]  [Normal Traffic           ]  Firewall ALLOW UDP from 10.10.15.25:53 to 8.8.8.8:53 - DNS Query
+2026-07-07 14:43:11  [CRITICAL]  [Exfiltration             ]  Firewall ALLOW TCP from 10.10.15.25:49816 to 198.51.100.20:443 - HTTPS Outbound Exfil
+2026-07-07 14:45:00  [INFO    ]  [Normal Traffic           ]  Firewall ALLOW TCP from 10.10.15.12:50102 to 13.107.4.50:443 - HTTPS
+2026-07-07 14:45:10  [LOW     ]  [Normal Authentication    ]  VPN LOGIN SUCCESS for user 'a.davis' from IP 192.168.12.34
+2026-07-07 14:45:25  [LOW     ]  [Session Activity         ]  VPN SESSION START for user 'a.davis' from IP N/A
+2026-07-07 14:50:22  [INFO    ]  [Normal Traffic           ]  Firewall ALLOW UDP from 10.10.15.25:123 to 162.159.200.1:123 - NTP
+2026-07-07 15:00:10  [INFO    ]  [Normal Traffic           ]  Firewall ALLOW TCP from 10.10.15.105:51225 to 142.250.190.46:443 - HTTPS
+2026-07-07 15:02:14  [LOW     ]  [Session Activity         ]  VPN SESSION END for user 'j.smith' from IP N/A
+2026-07-07 15:30:00  [HIGH    ]  [Incident Detection       ]  SOC Manager escalates urgent alert regarding user 'j.smith' and unauthorized Finance Server outbound HTTPS connections.
+2026-07-07 15:30:45  [LOW     ]  [Session Activity         ]  VPN SESSION END for user 's.taylor' from IP N/A
+2026-07-07 17:00:00  [LOW     ]  [Session Activity         ]  VPN SESSION END for user 'a.davis' from IP N/A

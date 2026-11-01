@@ -85,15 +85,12 @@ if "%ERRORLEVEL%"=="0" set "OLLAMA_INSTALLED=1"
 if exist "%LOCALAPPDATA%\Programs\Ollama\ollama.exe" set "OLLAMA_INSTALLED=1"
 
 if "%OLLAMA_INSTALLED%"=="1" goto :ollama_installed
-echo [WARNING] Ollama is not installed or not found in system Path.
-if exist "OllamaSetup.exe" goto :launch_ollama_installer
 echo ===================================================
-echo [ERROR] Ollama is not installed!
-echo Please download and install Ollama from https://ollama.com
-echo or place 'OllamaSetup.exe' in this directory.
+echo [NOTICE] Ollama is not installed or not in PATH.
+echo The platform will run in Built-in DFIR Expert Engine mode.
+echo (To enable local LLMs later, download Ollama from https://ollama.com)
 echo ===================================================
-pause
-exit /b
+goto :launch_server
 
 :launch_ollama_installer
 echo Found local installer OllamaSetup.exe. Launching installer...
@@ -150,7 +147,7 @@ ollama pull qwen2.5:0.5b
 :qwen0_ok
 echo [INFO] Model 'qwen2.5:0.5b' is ready.
 
-
+:launch_server
 :: 9. Launch browser page
 echo [INFO] Launching Dashboard UI in browser...
 start http://127.0.0.1:8000

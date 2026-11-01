@@ -1,669 +1,862 @@
+/**
+ * AI Cyber Forensics & Incident Response Platform
+ * Full-featured Frontend Client Logic
+ */
+
 document.addEventListener("DOMContentLoaded", () => {
-    // 1. Tab Switching Functionality
-    const navItems = document.querySelectorAll(".nav-item");
-    const tabPanes = document.querySelectorAll(".tab-pane");
-    const pageTitle = document.getElementById("page-title");
-    const pageSubtitle = document.getElementById("page-subtitle");
+    // State Store
+    let allProcesses = [];
+    let allTimelineEvents = [];
+    let evidenceFiles = [];
 
-    const tabMeta = {
-        "dashboard": { title: "Security Dashboard", subtitle: "Real-time Windows system metrics & services status" },
-        "artifacts": { title: "Artifact Discovery", subtitle: "Identify local LLM installations, caching paths, and model files" },
-        "operations": { title: "Hashes & Timeline", subtitle: "Verify integrity of acquired evidence and build chronological timeline" },
-        "ai-copilot": { title: "AI Incident Copilot", subtitle: "Synthesize gathered evidence and generate Incident Reports using local LLMs" },
-        "rag-chatbot": { title: "AI Forensic Chatbot", subtitle: "Interact with local AI agent using RAG context from evidence logs" }
-    };
+    // Initialize UI
+    initNavigation();
+    initSystemMetrics();
+    initOllamaStatus();
+    initLiveForensics();
+    initTimeline();
+    initEvidenceAndCustody();
+    initThreatIntel();
+    initInspector();
+    initAICopilot();
+    initChatbot();
 
-    navItems.forEach(item => {
-        item.addEventListener("click", (e) => {
-            e.preventDefault();
-            const tabId = item.getAttribute("data-tab");
-            
-            // Toggle sidebar active item
-            navItems.forEach(nav => nav.classList.remove("active"));
-            item.classList.add("active");
+    // -----------------------------------------------------------------------
+    // Navigation & Sub-Tabs
+    // -----------------------------------------------------------------------
+    function initNavigation() {
+        const navItems = document.querySelectorAll(".nav-item");
+        const tabPanes = document.querySelectorAll(".tab-pane");
 
-            // Toggle active pane
-            tabPanes.forEach(pane => pane.classList.remove("active"));
-            document.getElementById(`tab-${tabId}`).classList.add("active");
+        navItems.forEach(item => {
+            item.addEventListener("click", (e) => {
+                e.preventDefault();
+                const targetTab = item.getAttribute("data-tab");
 
-            // Update Titles
-            if (tabMeta[tabId]) {
-                pageTitle.textContent = tabMeta[tabId].title;
-                pageSubtitle.textContent = tabMeta[tabId].subtitle;
-            }
+                navItems.forEach(n => n.classList.remove("active"));
+                tabPanes.forEach(p => p.classList.remove("active"));
 
-            // Trigger loading when RAG Chatbot is clicked
-            if (tabId === "rag-chatbot") {
-                loadRagEvidence();
-                const modelSelect = document.getElementById("model-select");
-                const currentModel = (modelSelect && modelSelect.value) || "llama3.2:1b";
-                const ragModelSelect = document.getElementById("rag-model-select");
-                if (ragModelSelect && currentModel) {
-                    ragModelSelect.value = currentModel;
+                item.classList.add("active");
+                const targetPane = document.getElementById(`tab-${targetTab}`);
+                if (targetPane) {
+                    targetPane.classList.add("active");
                 }
-            }
+
+                // Update page titles
+                const titles = {
+                    "dashboard": ["Forensic Operations Dashboard", "Real-time host metrics, evidence integrity & AI incident response"],
+                    "live-forensics": ["Live Host Forensics", "Process anomalies, active sockets, persistence hooks & user accounts"],
+                    "timeline": ["Chronological Super-Timeline", "Multi-source forensic event correlation & attack kill chain reconstruction"],
+                    "evidence": ["Evidence & Chain of Custody", "Cryptographic hashes, Shannon entropy & tamper-evident legal records"],
+                    "threat-intel": ["IOCs & Threat Intelligence", "High-fidelity threat indicators & MITRE ATT&CK matrix alignment"],
+                    "inspector": ["Hex & Strings Inspector", "Deep binary inspection, offset dump & printable string extraction"],
+                    "ai-copilot": ["AI Incident Copilot", "Automated executive DFIR report generation & actionable response plan"],
+                    "rag-chatbot": ["AI Forensic Assistant", "Natural language Q&A backed by forensic evidence context"]
+                };
+                if (titles[targetTab]) {
+                    document.getElementById("page-title").textContent = titles[targetTab][0];
+                    document.getElementById("page-subtitle").textContent = titles[targetTab][1];
+                }
+            });
         });
-    });
 
-    // 2. Fetch System & Ollama Information
-    async function loadSystemStats() {
-        try {
-            const res = await fetch("/api/system_info");
-            if (!res.ok) throw new Error("Failed to fetch system info");
-            const data = await res.json();
+        // Sub-tabs in Live Forensics
+        const subTabBtns = document.querySelectorAll(".sub-tab-btn");
+        subTabBtns.forEach(btn => {
+            btn.addEventListener("click", () => {
+                const targetSub = btn.getAttribute("data-sub");
+                subTabBtns.forEach(b => b.classList.remove("active"));
+                document.querySelectorAll(".sub-tab-content").forEach(c => c.classList.remove("active"));
 
-            // Quick stats in Header
-            document.getElementById("quick-os").textContent = data.os;
-            document.getElementById("quick-cpu").textContent = `${data.cpu_usage_percent}%`;
-            document.getElementById("quick-ram").textContent = `${data.memory.percentage}%`;
-
-            // Dashboard Grid System Info
-            document.getElementById("sys-hostname").textContent = data.hostname;
-            document.getElementById("sys-os").textContent = `${data.os} (${data.release})`;
-            document.getElementById("sys-version").textContent = data.version;
-            document.getElementById("sys-arch").textContent = data.machine;
-            document.getElementById("sys-processor").textContent = data.processor || "Generic CPU";
-
-            // Hardware Utilization Cards
-            document.getElementById("cpu-cores").textContent = data.cpu_count;
-            document.getElementById("cpu-percent-lbl").textContent = `${data.cpu_usage_percent}%`;
-            document.getElementById("cpu-progress-bar").style.width = `${data.cpu_usage_percent}%`;
-
-            document.getElementById("ram-used").textContent = data.memory.used_gb;
-            document.getElementById("ram-total").textContent = data.memory.total_gb;
-            document.getElementById("ram-percent-lbl").textContent = `${data.memory.percentage}%`;
-            document.getElementById("ram-progress-bar").style.width = `${data.memory.percentage}%`;
-
-            document.getElementById("disk-free").textContent = data.disk.free_gb;
-            document.getElementById("disk-percent-lbl").textContent = `${data.disk.percentage}%`;
-            document.getElementById("disk-progress-bar").style.width = `${data.disk.percentage}%`;
-
-        } catch (err) {
-            console.error(err);
-        }
+                btn.classList.add("active");
+                const targetContent = document.getElementById(targetSub);
+                if (targetContent) targetContent.classList.add("active");
+            });
+        });
     }
 
-    async function loadOllamaStats() {
-        try {
-            const res = await fetch("/api/ollama_info");
-            if (!res.ok) throw new Error("Failed to fetch Ollama info");
-            const data = await res.json();
+    // -----------------------------------------------------------------------
+    // 1. System Metrics & Telemetry
+    // -----------------------------------------------------------------------
+    function initSystemMetrics() {
+        async function fetchSystemMetrics() {
+            try {
+                const res = await fetch("/api/system_info");
+                if (!res.ok) return;
+                const data = await res.json();
 
-            // Update Indicator
+                // Quick stats header
+                document.getElementById("quick-os").textContent = `${data.os} ${data.machine}`;
+                document.getElementById("quick-cpu").textContent = `${data.cpu_usage_percent}%`;
+                document.getElementById("quick-ram").textContent = `${data.memory.percentage}%`;
+
+                // Detailed profiling card
+                document.getElementById("sys-hostname").textContent = data.hostname || "-";
+                document.getElementById("sys-os").textContent = `${data.os} (${data.release || ""})`;
+                document.getElementById("sys-version").textContent = data.version || "-";
+                document.getElementById("sys-arch").textContent = data.machine || "-";
+                document.getElementById("sys-uptime").textContent = data.uptime || "-";
+                document.getElementById("sys-boot-time").textContent = data.boot_time || "-";
+                document.getElementById("sys-processor").textContent = data.processor || "-";
+
+                // Progress Bars
+                document.getElementById("cpu-cores").textContent = data.cpu_count_logical || 0;
+                document.getElementById("cpu-percent-lbl").textContent = `${data.cpu_usage_percent}%`;
+                document.getElementById("cpu-progress-bar").style.width = `${data.cpu_usage_percent}%`;
+
+                document.getElementById("ram-used").textContent = data.memory.used_gb;
+                document.getElementById("ram-total").textContent = data.memory.total_gb;
+                document.getElementById("ram-percent-lbl").textContent = `${data.memory.percentage}%`;
+                document.getElementById("ram-progress-bar").style.width = `${data.memory.percentage}%`;
+
+                document.getElementById("disk-free").textContent = data.disk.free_gb;
+                document.getElementById("disk-percent-lbl").textContent = `${data.disk.percentage}%`;
+                document.getElementById("disk-progress-bar").style.width = `${data.disk.percentage}%`;
+            } catch (err) {
+                console.error("System info error:", err);
+            }
+        }
+
+        fetchSystemMetrics();
+        setInterval(fetchSystemMetrics, 10000);
+    }
+
+    // -----------------------------------------------------------------------
+    // 2. Ollama Status Check
+    // -----------------------------------------------------------------------
+    function initOllamaStatus() {
+        async function checkOllama() {
             const indicator = document.getElementById("ollama-status-indicator");
-            const indicatorText = document.getElementById("ollama-status-text");
-            const portDot = document.getElementById("port-status-dot");
-            const portText = document.getElementById("port-status-text");
+            const statusText = document.getElementById("ollama-status-text");
+            const daemonStatus = document.getElementById("ollama-daemon-status");
+            const versionVal = document.getElementById("ollama-version-val");
+            const pathVal = document.getElementById("ollama-path-val");
+            const badgesContainer = document.getElementById("installed-models-badges");
 
-            if (data.service_running || data.port_listening) {
-                indicator.classList.add("online");
-                indicatorText.textContent = `Online (${data.version})`;
-                
-                portDot.className = "status-dot green";
-                portText.textContent = "Listening on port 11434 (Active)";
-            } else {
-                indicator.classList.remove("online");
-                indicatorText.textContent = "Offline / Inactive";
+            try {
+                const res = await fetch("/api/ollama_info");
+                const data = await res.json();
 
-                portDot.className = "status-dot red";
-                portText.textContent = "Port 11434 not listening";
-            }
-
-            // Populate Artifacts tab installation paths
-            document.getElementById("art-exe").textContent = data.installed_path;
-            
-            // Populate models select dropdowns
-            const select = document.getElementById("model-select");
-            const ragSelect = document.getElementById("rag-model-select");
-            
-            if (select) select.innerHTML = "";
-            if (ragSelect) ragSelect.innerHTML = "";
-            
-            if (data.installed_models && data.installed_models.length > 0) {
-                data.installed_models.forEach(model => {
-                    if (select) {
-                        const opt = document.createElement("option");
-                        opt.value = model;
-                        opt.textContent = model;
-                        select.appendChild(opt);
-                    }
-                    if (ragSelect) {
-                        const opt = document.createElement("option");
-                        opt.value = model;
-                        opt.textContent = model;
-                        if (model.includes("llama3.2:1b") || model.includes("llama3.2")) {
-                            opt.selected = true;
-                        }
-                        ragSelect.appendChild(opt);
-                    }
-                });
-            } else {
-                if (select) {
-                    const opt = document.createElement("option");
-                    opt.value = "";
-                    opt.textContent = "No models installed (Run 'ollama pull llama3.2:1b')";
-                    select.appendChild(opt);
+                if (data.service_running || (data.installed_models && data.installed_models.length > 0)) {
+                    indicator.className = "status-indicator online";
+                    statusText.textContent = "Service Active";
+                    if (daemonStatus) daemonStatus.innerHTML = '<span class="badge-verified">Running (Online)</span>';
+                } else {
+                    indicator.className = "status-indicator";
+                    statusText.textContent = "Offline (Using Heuristic Engine)";
+                    if (daemonStatus) daemonStatus.innerHTML = '<span class="badge-info">Offline - Heuristic Fallback Active</span>';
                 }
-                if (ragSelect) {
-                    const opt = document.createElement("option");
-                    opt.value = "";
-                    opt.textContent = "No models installed";
-                    ragSelect.appendChild(opt);
-                }
-            }
 
-        } catch (err) {
-            console.error(err);
-        }
-    }
+                if (versionVal) versionVal.textContent = data.version || "Not detected";
+                if (pathVal) pathVal.textContent = data.installed_path || "N/A";
 
-    async function loadProcesses() {
-        try {
-            const res = await fetch("/api/processes");
-            if (!res.ok) throw new Error("Failed to fetch processes");
-            const data = await res.json();
-
-            const tbody = document.getElementById("processes-tbody");
-            tbody.innerHTML = "";
-
-            if (data.ollama_processes && data.ollama_processes.length > 0) {
-                data.ollama_processes.forEach(proc => {
-                    const tr = document.createElement("tr");
-                    tr.innerHTML = `
-                        <td class="font-mono">${proc.pid}</td>
-                        <td>${proc.name}</td>
-                        <td>${proc.cpu_percent}%</td>
-                        <td class="font-mono">${proc.memory_mb} MB</td>
-                    `;
-                    tbody.appendChild(tr);
-                });
-            } else {
-                tbody.innerHTML = `<tr><td colspan="4" class="text-center text-muted">No active Ollama service processes detected</td></tr>`;
-            }
-
-        } catch (err) {
-            console.error(err);
-        }
-    }
-
-    async function loadArtifactsFiles() {
-        try {
-            const res = await fetch("/api/artifacts");
-            if (!res.ok) throw new Error("Failed to load artifacts");
-            const data = await res.json();
-
-            document.getElementById("art-dir").textContent = data.model_directory;
-            document.getElementById("art-total-files").textContent = data.total_files;
-
-            const tbody = document.getElementById("files-tbody");
-            tbody.innerHTML = "";
-
-            if (data.files && data.files.length > 0) {
-                data.files.forEach(file => {
-                    const tr = document.createElement("tr");
-                    tr.innerHTML = `
-                        <td class="font-mono">${file.name}</td>
-                        <td class="font-mono text-muted">${file.path}</td>
-                        <td class="font-mono">${file.size_mb} MB</td>
-                    `;
-                    tbody.appendChild(tr);
-                });
-            } else {
-                tbody.innerHTML = `<tr><td colspan="3" class="text-center text-muted">No cache files found in directory</td></tr>`;
-            }
-
-        } catch (err) {
-            console.error(err);
-        }
-    }
-
-    // 3. Hashing Operation Trigger
-    const btnHashes = document.getElementById("btn-run-hashes");
-    btnHashes.addEventListener("click", async () => {
-        btnHashes.disabled = true;
-        btnHashes.innerHTML = `<span class="material-icons-round spinner-btn">autorenew</span> Computing...`;
-        
-        try {
-            const res = await fetch("/api/hashing", { method: "POST" });
-            if (!res.ok) throw new Error("Failed to run hashes");
-            const data = await res.json();
-            
-            // Populate Hashes table
-            const tbody = document.getElementById("hashes-tbody");
-            tbody.innerHTML = "";
-
-            // Show run-type banner as first row
-            const bannerRow = document.createElement("tr");
-            if (data.is_first_run) {
-                bannerRow.innerHTML = `<td colspan="3" style="background: rgba(16,185,129,0.1); border-left: 3px solid #10b981; color: #10b981; font-weight: 600; font-size: 12px; padding: 10px 16px;">
-                    ✅ BASELINE RECORDED — Hashes saved. Now edit any file inside the <code style="background:rgba(255,255,255,0.07); padding:1px 5px; border-radius:4px;">Evidence/</code> folder, then click Compute SHA256 Hashes again to detect tampering.
-                </td>`;
-            } else if (data.has_tampered) {
-                bannerRow.innerHTML = `<td colspan="3" style="background: rgba(239,68,68,0.12); border-left: 3px solid #ef4444; color: #ef4444; font-weight: 600; font-size: 12px; padding: 10px 16px;">
-                    🚨 VERIFICATION RUN — Tampering detected in one or more evidence files! See highlighted rows below.
-                </td>`;
-            } else {
-                bannerRow.innerHTML = `<td colspan="3" style="background: rgba(6,182,212,0.08); border-left: 3px solid #06b6d4; color: #06b6d4; font-weight: 600; font-size: 12px; padding: 10px 16px;">
-                    🔍 VERIFICATION RUN — All files verified against baseline. No tampering detected.
-                </td>`;
-            }
-            tbody.appendChild(bannerRow);
-            
-            data.hashes.forEach(file => {
-                const tr = document.createElement("tr");
-                if (file.status === "tampered") {
-                    tr.className = "row-tampered";
-                }
-                
-                const statusBadge = (() => {
-                    if (file.status === "verified") {
-                        return `<span class="status-badge-inline verified">✅ Verified</span>`;
-                    } else if (file.status === "tampered") {
-                        return `<span class="status-badge-inline tampered">⚠️ TAMPERED</span>`;
+                if (badgesContainer) {
+                    if (data.installed_models && data.installed_models.length > 0) {
+                        badgesContainer.innerHTML = data.installed_models
+                            .map(m => `<span class="badge-low font-mono" style="margin-right: 6px;">${m}</span>`)
+                            .join("");
                     } else {
-                        return `<span class="status-badge-inline new">🆕 New File</span>`;
+                        badgesContainer.innerHTML = '<span class="badge-info">Deterministic DFIR Expert Engine Active (No models required)</span>';
                     }
-                })();
-
-                tr.innerHTML = `
-                    <td><strong>${file.filename}</strong></td>
-                    <td>
-                        <div class="font-mono text-cyan" style="word-break: break-all;">${file.hash}</div>
-                        ${file.status === 'tampered' ? `<div class="font-mono" style="color:#ef4444; font-size: 11px; margin-top: 6px;">⚠ Baseline was: ${file.baseline_hash}</div>` : ''}
-                    </td>
-                    <td>${statusBadge}</td>
-                `;
-                tbody.appendChild(tr);
-            });
-
-            if (data.is_first_run) {
-                showToast("✅ Baseline hashes recorded successfully!");
-            } else if (data.has_tampered) {
-                showToast("🚨 Tampering detected in evidence files!");
-            } else {
-                showToast("✅ All evidence files verified — integrity confirmed.");
+                }
+            } catch (err) {
+                indicator.className = "status-indicator";
+                statusText.textContent = "Offline (Heuristic Mode)";
             }
-
-        } catch (err) {
-            showToast("Error computing hashes: " + err.message);
-        } finally {
-            btnHashes.disabled = false;
-            btnHashes.innerHTML = `<span class="material-icons-round">fingerprint</span> Compute SHA256 Hashes`;
-        }
-    });
-
-    // 4. Timeline Operation Trigger
-    const btnTimeline = document.getElementById("btn-run-timeline");
-    btnTimeline.addEventListener("click", async () => {
-        btnTimeline.disabled = true;
-        btnTimeline.innerHTML = `<span class="material-icons-round spinner-btn">autorenew</span> Building...`;
-
-        try {
-            const res = await fetch("/api/timeline", { method: "POST" });
-            if (!res.ok) throw new Error("Failed to build timeline");
-            const data = await res.json();
-
-            // Populate Stepper Timeline
-            const stepper = document.getElementById("timeline-stepper");
-            stepper.innerHTML = "";
-
-            data.timeline.forEach(event => {
-                const node = document.createElement("div");
-                node.className = "timeline-node";
-                node.innerHTML = `
-                    <div class="timeline-icon"></div>
-                    <div class="timeline-content">
-                        <span class="timeline-time">${event.modified_time}</span>
-                        <span class="timeline-title">${event.filename} (Modified)</span>
-                    </div>
-                `;
-                stepper.appendChild(node);
-            });
-
-            showToast("Forensic timeline built successfully!");
-
-        } catch (err) {
-            showToast("Error compiling timeline: " + err.message);
-        } finally {
-            btnTimeline.disabled = false;
-            btnTimeline.innerHTML = `<span class="material-icons-round">schedule</span> Build Forensic Timeline`;
-        }
-    });
-
-    // 5. AI Copilot Report Generation
-    const btnReport = document.getElementById("btn-generate-report");
-    const preloader = document.getElementById("report-preloader");
-    const reportContent = document.getElementById("report-content");
-    const reportBadge = document.getElementById("report-status-badge");
-
-    btnReport.addEventListener("click", async () => {
-        const model = document.getElementById("model-select").value;
-        if (!model) {
-            showToast("Please choose a valid local LLM model");
-            return;
         }
 
-        btnReport.disabled = true;
-        preloader.classList.remove("hidden");
-        reportContent.classList.add("hidden");
-        reportBadge.className = "status-badge";
-        reportBadge.textContent = "SYNTHESIZING...";
+        checkOllama();
+        setInterval(checkOllama, 15000);
+    }
 
-        try {
-            const res = await fetch("/api/report/generate", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ model })
-            });
-            if (!res.ok) throw new Error("Failed to generate report");
-            const data = await res.json();
+    // -----------------------------------------------------------------------
+    // 3. Live Host Forensics (Processes, Sockets, Persistence, Users)
+    // -----------------------------------------------------------------------
+    function initLiveForensics() {
+        const btnRefreshProcs = document.getElementById("btn-refresh-procs");
+        const btnRefreshSockets = document.getElementById("btn-refresh-sockets");
+        const procSearch = document.getElementById("proc-search-input");
+        const procFilter = document.getElementById("proc-filter-select");
 
-            // Simple markdown-to-html conversion for display formatting
-            renderMarkdown(data.report);
+        async function loadProcesses() {
+            const tbody = document.getElementById("procs-table-body");
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align: center;">Scanning live processes...</td></tr>';
 
-            reportBadge.className = "status-badge success";
-            reportBadge.textContent = "COMPLETED";
-            showToast("AI Incident Report generated successfully!");
+            try {
+                const res = await fetch("/api/forensics/processes");
+                const data = await res.json();
+                allProcesses = data.processes || [];
 
-        } catch (err) {
-            reportContent.textContent = "Error running analysis: " + err.message;
-            reportBadge.className = "status-badge";
-            reportBadge.textContent = "FAILED";
-            showToast("Error generating report");
-        } finally {
-            btnReport.disabled = false;
-            preloader.classList.add("hidden");
-            reportContent.classList.remove("hidden");
-        }
-    });
-
-    // Read existing report on init
-    async function loadExistingReport() {
-        try {
-            const res = await fetch("/api/report/get");
-            if (!res.ok) throw new Error("Failed to load report");
-            const data = await res.json();
-            if (data.exists) {
-                renderMarkdown(data.report);
-                reportBadge.className = "status-badge success";
-                reportBadge.textContent = "COMPLETED";
+                document.getElementById("count-procs").textContent = data.total_processes;
+                renderProcesses();
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="8" style="color: var(--danger);">Failed to load processes: ${err.message}</td></tr>`;
             }
-        } catch (err) {
-            console.error(err);
         }
-    }
 
-    // Markdown Parser Helper
-    function renderMarkdown(mdText) {
-        let html = mdText
-            // Escape HTML tags to prevent injections
-            .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
-            // Headers
-            .replace(/^# (.*$)/gim, '<h1>$1</h1>')
-            .replace(/^## (.*$)/gim, '<h2>$1</h2>')
-            .replace(/^### (.*$)/gim, '<h3>$1</h3>')
-            // Bold
-            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-            // Code blocks
-            .replace(/```text([\s\S]*?)```/g, '<pre class="font-mono" style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 6px; margin: 10px 0;">$1</pre>')
-            .replace(/```([\s\S]*?)```/g, '<pre class="font-mono" style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 6px; margin: 10px 0;">$1</pre>')
-            .replace(/`(.*?)`/g, '<code class="font-mono" style="background: rgba(255,255,255,0.06); padding: 2px 6px; border-radius: 4px;">$1</code>')
-            // Tables (Simple conversion)
-            .replace(/\| (.*) \|/g, (match) => {
-                let cells = match.split('|').map(c => c.trim()).filter(c => c !== '');
-                if (cells[0].includes('---')) return ''; // Skip separator lines
-                let isHeader = match.includes('File Name') || match.includes('SHA-256') || match.includes('Description');
-                let tag = isHeader ? 'th' : 'td';
-                let tr = '<tr>' + cells.map(c => `<${tag}>${c}</${tag}>`).join('') + '</tr>';
-                return isHeader ? `<table><thead>${tr}</thead><tbody>` : tr;
+        function renderProcesses() {
+            const tbody = document.getElementById("procs-table-body");
+            const q = (procSearch.value || "").toLowerCase();
+            const filterType = procFilter.value;
+
+            let filtered = allProcesses.filter(p => {
+                if (filterType === "suspicious" && !p.is_suspicious) return false;
+                if (!q) return true;
+                return (
+                    p.name.toLowerCase().includes(q) ||
+                    String(p.pid).includes(q) ||
+                    p.user.toLowerCase().includes(q) ||
+                    (p.anomalies && p.anomalies.some(a => a.toLowerCase().includes(q)))
+                );
             });
-        
-        // Close table tags
-        if (html.includes('<table>')) {
-            html = html.replace(/<\/tr>(?!\s*<tr>)/g, '</tr></tbody></table>');
-        }
 
-        reportContent.innerHTML = html;
-    }
-
-    // Toast Popup Helper
-    function showToast(text) {
-        const toast = document.getElementById("toast");
-        const toastText = document.getElementById("toast-text");
-        toastText.textContent = text;
-        toast.classList.remove("hidden");
-        
-        setTimeout(() => {
-            toast.classList.add("hidden");
-        }, 4000);
-    }
-
-    // 5.5 RAG Chatbot Logic
-    const ragChatInput = document.getElementById("rag-chat-input");
-    const ragBtnSend = document.getElementById("rag-btn-send");
-    const ragMessagesArea = document.getElementById("rag-messages-area");
-    const ragFileList = document.getElementById("rag-file-list");
-    const ragFileInput = document.getElementById("rag-file-input");
-    const ragUploadStatus = document.getElementById("rag-upload-status");
-    const ragUploadStatusText = document.getElementById("rag-upload-status-text");
-    const chatTypingIndicator = document.getElementById("chat-typing-indicator");
-
-    async function loadRagEvidence() {
-        try {
-            const res = await fetch("/api/chat/evidence");
-            if (!res.ok) throw new Error("Failed to load evidence files");
-            const files = await res.json();
-
-            ragFileList.innerHTML = "";
-            if (files.length === 0) {
-                ragFileList.innerHTML = `<div class="text-muted text-center py-4">No evidence files found.</div>`;
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center;">No matching processes found.</td></tr>';
                 return;
             }
 
-            files.forEach(file => {
-                const item = document.createElement("div");
-                item.className = "rag-file-item";
-                
-                const sizeKb = (file.size / 1024).toFixed(2);
-                item.innerHTML = `
-                    <div class="rag-file-details">
-                        <span class="material-icons-round rag-file-icon">description</span>
-                        <div class="rag-file-info">
-                            <span class="rag-file-name" title="${file.name}">${file.name}</span>
-                            <span class="rag-file-size">${sizeKb} KB</span>
-                        </div>
-                    </div>
+            tbody.innerHTML = filtered.slice(0, 100).map(p => {
+                let badge = '<span class="badge-info">Normal</span>';
+                if (p.is_suspicious) {
+                    badge = `<span class="badge-tampered">${p.anomalies.join(", ")}</span>`;
+                }
+
+                return `
+                    <tr style="${p.is_suspicious ? 'background: rgba(220, 38, 38, 0.05);' : ''}">
+                        <td class="font-mono"><strong>${p.pid}</strong></td>
+                        <td class="font-mono text-muted">${p.ppid}</td>
+                        <td><strong>${escapeHtml(p.name)}</strong></td>
+                        <td>${escapeHtml(p.user)}</td>
+                        <td>${p.cpu_percent}%</td>
+                        <td>${p.memory_mb} MB</td>
+                        <td><span class="badge-low">${p.status}</span></td>
+                        <td>${badge}</td>
+                    </tr>
                 `;
-                ragFileList.appendChild(item);
-            });
-        } catch (err) {
-            console.error("Error loading RAG evidence:", err);
-            ragFileList.innerHTML = `<div class="text-danger text-center py-4">Error loading evidence.</div>`;
+            }).join("");
         }
+
+        async function loadSockets() {
+            const tbody = document.getElementById("sockets-table-body");
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">Scanning network sockets...</td></tr>';
+
+            try {
+                const res = await fetch("/api/forensics/sockets");
+                const data = await res.json();
+                const conns = data.connections || [];
+                document.getElementById("count-sockets").textContent = data.total_connections;
+
+                if (conns.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">No active internet connections or socket access restricted.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = conns.map(c => {
+                    let threatBadge = '—';
+                    if (c.threat_tag) {
+                        if (c.threat_tag.includes("CRITICAL")) {
+                            threatBadge = `<span class="badge-critical">${escapeHtml(c.threat_tag)}</span>`;
+                        } else if (c.threat_tag.includes("HIGH") || c.threat_tag.includes("Outbound")) {
+                            threatBadge = `<span class="badge-high">${escapeHtml(c.threat_tag)}</span>`;
+                        } else {
+                            threatBadge = `<span class="badge-medium">${escapeHtml(c.threat_tag)}</span>`;
+                        }
+                    }
+
+                    return `
+                        <tr>
+                            <td><span class="badge-low">${c.protocol}</span></td>
+                            <td class="font-mono">${escapeHtml(c.local_address)}</td>
+                            <td class="font-mono">${escapeHtml(c.remote_address)}</td>
+                            <td><span class="badge-info">${c.status}</span></td>
+                            <td><strong>${escapeHtml(c.process_name)}</strong></td>
+                            <td class="font-mono">${c.pid || "—"}</td>
+                            <td>${threatBadge}</td>
+                        </tr>
+                    `;
+                }).join("");
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="7" style="color: var(--danger);">Failed to scan sockets: ${err.message}</td></tr>`;
+            }
+        }
+
+        async function loadPersistence() {
+            const tbody = document.getElementById("persistence-table-body");
+            try {
+                const res = await fetch("/api/forensics/persistence");
+                const data = await res.json();
+                const autoruns = data.autoruns || [];
+                document.getElementById("count-autoruns").textContent = data.total_autoruns;
+
+                if (autoruns.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">No persistent autoruns identified.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = autoruns.map(a => `
+                    <tr>
+                        <td><span class="badge-high">${escapeHtml(a.type)}</span></td>
+                        <td><strong>${escapeHtml(a.name)}</strong></td>
+                        <td class="font-mono" style="font-size: 11px;">${escapeHtml(a.location)}</td>
+                        <td>${a.modified || "—"}</td>
+                    </tr>
+                `).join("");
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="4">Error loading persistence: ${err.message}</td></tr>`;
+            }
+        }
+
+        async function loadUsers() {
+            const container = document.getElementById("users-info-container");
+            try {
+                const res = await fetch("/api/forensics/users");
+                const data = await res.json();
+
+                let html = '<div style="margin-bottom: 16px;"><strong>Active Logged-In Sessions:</strong></div>';
+                if (data.active_sessions && data.active_sessions.length > 0) {
+                    html += '<ul>' + data.active_sessions.map(s => `
+                        <li style="margin-bottom: 6px;">
+                            User <strong>${escapeHtml(s.username)}</strong> on terminal <code>${escapeHtml(s.terminal)}</code> from host <code>${escapeHtml(s.host)}</code> (Session started: ${s.started})
+                        </li>
+                    `).join("") + '</ul>';
+                } else {
+                    html += '<p style="color: var(--color-text-muted);">No interactive active remote sessions detected.</p>';
+                }
+
+                html += '<div style="margin-top: 20px; margin-bottom: 12px;"><strong>Interactive System Accounts:</strong></div>';
+                if (data.interactive_accounts && data.interactive_accounts.length > 0) {
+                    html += '<div class="table-container"><table><thead><tr><th>Username</th><th>UID</th><th>Home Directory</th><th>Default Shell</th></tr></thead><tbody>';
+                    html += data.interactive_accounts.map(u => `
+                        <tr>
+                            <td><strong>${escapeHtml(u.username)}</strong></td>
+                            <td class="font-mono">${u.uid}</td>
+                            <td class="font-mono">${escapeHtml(u.home)}</td>
+                            <td><code>${escapeHtml(u.shell)}</code></td>
+                        </tr>
+                    `).join("");
+                    html += '</tbody></table></div>';
+                }
+                container.innerHTML = html;
+            } catch (err) {
+                container.innerHTML = `<p style="color: var(--danger);">Failed to load user accounts: ${err.message}</p>`;
+            }
+        }
+
+        if (btnRefreshProcs) btnRefreshProcs.addEventListener("click", loadProcesses);
+        if (btnRefreshSockets) btnRefreshSockets.addEventListener("click", loadSockets);
+        if (procSearch) procSearch.addEventListener("input", renderProcesses);
+        if (procFilter) procFilter.addEventListener("change", renderProcesses);
+
+        // Initial loads
+        loadProcesses();
+        loadSockets();
+        loadPersistence();
+        loadUsers();
     }
 
-    // Expose loadRagEvidence globally so it can be called from tab click
-    window.loadRagEvidence = loadRagEvidence;
+    // -----------------------------------------------------------------------
+    // 4. Super-Timeline
+    // -----------------------------------------------------------------------
+    function initTimeline() {
+        const btnRebuild = document.getElementById("btn-rebuild-timeline");
+        const timelineSearch = document.getElementById("timeline-search-input");
+        const sevFilter = document.getElementById("timeline-severity-filter");
+        const srcFilter = document.getElementById("timeline-source-filter");
 
-    async function sendChatMessage() {
-        const question = ragChatInput.value.trim();
-        if (!question) return;
+        async function fetchTimeline() {
+            const tbody = document.getElementById("timeline-table-body");
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align: center;">Correlating multi-source forensic logs...</td></tr>';
 
-        // Append user message
-        appendChatMessage("user", question);
-        ragChatInput.value = "";
+            try {
+                const res = await fetch("/api/timeline");
+                const data = await res.json();
+                allTimelineEvents = data.timeline || [];
 
-        // Show typing indicator
-        chatTypingIndicator.classList.remove("hidden");
-        ragMessagesArea.scrollTop = ragMessagesArea.scrollHeight;
+                // Update KPI counters
+                if (data.summary) {
+                    document.getElementById("kpi-events-count").textContent = data.summary.total_events || allTimelineEvents.length;
+                    document.getElementById("kpi-critical-count").textContent = data.summary.severity_summary?.CRITICAL || 0;
+                }
 
-        const modelSelect = document.getElementById("rag-model-select");
-        const model = (modelSelect && modelSelect.value) || "llama3.2:1b";
+                renderTimeline();
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="8" style="color: var(--danger);">Failed to build timeline: ${err.message}</td></tr>`;
+            }
+        }
 
-        try {
-            const res = await fetch("/api/chat/query", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ question, model })
+        function renderTimeline() {
+            const tbody = document.getElementById("timeline-table-body");
+            const q = (timelineSearch.value || "").toLowerCase();
+            const sev = sevFilter.value;
+            const src = srcFilter.value;
+
+            let filtered = allTimelineEvents.filter(ev => {
+                if (sev !== "ALL" && ev.severity !== sev) return false;
+                if (src !== "ALL" && ev.log_type !== src) return false;
+                if (!q) return true;
+
+                return (
+                    ev.description.toLowerCase().includes(q) ||
+                    ev.timestamp.toLowerCase().includes(q) ||
+                    (ev.user && ev.user.toLowerCase().includes(q)) ||
+                    (ev.src_ip && ev.src_ip.includes(q)) ||
+                    (ev.dst_ip && ev.dst_ip.includes(q)) ||
+                    (ev.kill_chain_stage && ev.kill_chain_stage.toLowerCase().includes(q))
+                );
             });
 
-            if (!res.ok) {
-                const errorData = await res.json();
-                throw new Error(errorData.detail || "Server error");
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center;">No timeline events match the filter criteria.</td></tr>';
+                return;
             }
 
-            const data = await res.json();
-            
-            // Hide typing indicator
-            chatTypingIndicator.classList.add("hidden");
+            tbody.innerHTML = filtered.map(ev => {
+                let sevBadge = `<span class="badge-info">${ev.severity}</span>`;
+                if (ev.severity === "CRITICAL") sevBadge = `<span class="badge-critical">CRITICAL</span>`;
+                else if (ev.severity === "HIGH") sevBadge = `<span class="badge-high">HIGH</span>`;
+                else if (ev.severity === "MEDIUM") sevBadge = `<span class="badge-medium">MEDIUM</span>`;
+                else if (ev.severity === "LOW") sevBadge = `<span class="badge-low">LOW</span>`;
 
-            // Append AI response
-            appendChatMessage("ai", data.answer, data.sources, data.confidence, data.time);
-
-        } catch (err) {
-            console.error("Chat error:", err);
-            chatTypingIndicator.classList.add("hidden");
-            appendChatMessage("ai", `⚠️ Error: ${err.message}. Please check if Ollama is running and has the selected model pulled.`);
+                return `
+                    <tr style="${ev.severity === 'CRITICAL' ? 'background: rgba(220, 38, 38, 0.05);' : ''}">
+                        <td class="font-mono" style="white-space: nowrap;"><strong>${ev.timestamp}</strong></td>
+                        <td>${sevBadge}</td>
+                        <td><span class="badge-medium">${escapeHtml(ev.kill_chain_stage)}</span></td>
+                        <td><strong>${escapeHtml(ev.log_type)}</strong></td>
+                        <td>${ev.user !== 'N/A' ? `<code>${escapeHtml(ev.user)}</code>` : '—'}</td>
+                        <td class="font-mono">${ev.src_ip !== 'N/A' ? escapeHtml(ev.src_ip) : '—'}</td>
+                        <td class="font-mono">${ev.dst_ip !== 'N/A' ? escapeHtml(ev.dst_ip) : '—'}</td>
+                        <td style="font-size: 12px;">${escapeHtml(ev.description)}</td>
+                    </tr>
+                `;
+            }).join("");
         }
-        
-        ragMessagesArea.scrollTop = ragMessagesArea.scrollHeight;
+
+        if (btnRebuild) btnRebuild.addEventListener("click", fetchTimeline);
+        if (timelineSearch) timelineSearch.addEventListener("input", renderTimeline);
+        if (sevFilter) sevFilter.addEventListener("change", renderTimeline);
+        if (srcFilter) srcFilter.addEventListener("change", renderTimeline);
+
+        fetchTimeline();
     }
 
-    function appendChatMessage(sender, text, sources = [], confidence = "", timeStr = "") {
-        const msgDiv = document.createElement("div");
-        msgDiv.className = `chat-message ${sender}`;
+    // -----------------------------------------------------------------------
+    // 5. Evidence & Chain of Custody
+    // -----------------------------------------------------------------------
+    function initEvidenceAndCustody() {
+        const btnVerifyHashes = document.getElementById("btn-run-hashing");
+        const btnIntegrityReport = document.getElementById("btn-gen-integrity-report");
+        const btnUpload = document.getElementById("btn-upload-evidence");
+        const fileInput = document.getElementById("evidence-file-input");
 
-        // Simple markdown formatter for bubble text
-        let formattedText = text
-            .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
-            // Headers
-            .replace(/^### (.*$)/gim, '<h3>$1</h3>')
-            .replace(/^## (.*$)/gim, '<h2>$1</h2>')
-            .replace(/^# (.*$)/gim, '<h1>$1</h1>')
-            // Bold
-            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-            // Bullet points
-            .replace(/^\s*-\s+(.*$)/gim, '<li>$1</li>')
-            // Code blocks/inline
-            .replace(/`(.*?)`/g, '<code class="font-mono" style="background: rgba(255,255,255,0.06); padding: 2px 6px; border-radius: 4px;">$1</code>');
+        async function loadEvidence() {
+            const tbody = document.getElementById("evidence-table-body");
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">Calculating evidence hashes & entropy...</td></tr>';
 
-        // Wrap consecutive <li> tags in <ul>
-        if (formattedText.includes('<li>')) {
-            formattedText = formattedText.replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>');
+            try {
+                const res = await fetch("/api/evidence/list");
+                evidenceFiles = await res.json();
+                document.getElementById("kpi-evidence-count").textContent = evidenceFiles.length;
+
+                // Populate inspector dropdown too
+                const inspectorSelect = document.getElementById("inspector-file-select");
+                if (inspectorSelect) {
+                    inspectorSelect.innerHTML = '<option value="">Select Evidence File...</option>' +
+                        evidenceFiles.map(f => `<option value="${f.filename}">${f.filename} (${f.size_bytes} B)</option>`).join("");
+                }
+
+                tbody.innerHTML = evidenceFiles.map(f => {
+                    let entropyBadge = `<span class="badge-low">${f.entropy}</span>`;
+                    if (f.entropy >= 7.2) entropyBadge = `<span class="badge-critical">${f.entropy} (High)</span>`;
+                    else if (f.entropy >= 5.0) entropyBadge = `<span class="badge-medium">${f.entropy}</span>`;
+
+                    return `
+                        <tr>
+                            <td><strong>${escapeHtml(f.filename)}</strong></td>
+                            <td class="font-mono">${f.size_bytes} B</td>
+                            <td class="font-mono" style="font-size: 11px;">${f.sha256}</td>
+                            <td class="font-mono" style="font-size: 11px;">${f.md5}</td>
+                            <td>${entropyBadge}</td>
+                            <td><span class="badge-verified">Verified</span></td>
+                        </tr>
+                    `;
+                }).join("");
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="6" style="color: var(--danger);">Failed to load evidence: ${err.message}</td></tr>`;
+            }
         }
 
-        const time = timeStr || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        const senderName = sender === "user" ? "Investigator" : "RAG Assistant";
+        async function loadCustodyLedger() {
+            const transfersBody = document.getElementById("coc-transfers-body");
+            try {
+                const res = await fetch("/api/custody/ledger");
+                const ledger = await res.json();
 
-        let sourcesHtml = "";
-        if (sources && sources.length > 0) {
-            sourcesHtml = `
-                <div class="sources-used">
-                    <span class="sources-title">Sources used:</span>
-                    ${sources.map(src => `<span class="source-pill">${src}</span>`).join('')}
-                </div>
-            `;
+                const transfers = ledger.custody_transfers || [];
+                if (transfers.length === 0) {
+                    transfersBody.innerHTML = '<tr><td colspan="4">No custody transfers recorded.</td></tr>';
+                    return;
+                }
+
+                transfersBody.innerHTML = transfers.map(t => `
+                    <tr>
+                        <td class="font-mono" style="font-size: 11px;">${t.timestamp}</td>
+                        <td>${escapeHtml(t.released_by)}</td>
+                        <td>${escapeHtml(t.received_by)}</td>
+                        <td><strong>${escapeHtml(t.purpose)}</strong></td>
+                    </tr>
+                `).join("");
+            } catch (err) {
+                transfersBody.innerHTML = `<tr><td colspan="4">Error loading custody: ${err.message}</td></tr>`;
+            }
         }
 
-        let confidenceHtml = "";
-        if (confidence) {
-            const confClass = confidence.toLowerCase();
-            confidenceHtml = `<span class="confidence-badge-inline ${confClass}">${confidence} Confidence</span>`;
+        async function verifyHashes() {
+            try {
+                const res = await fetch("/api/hashing", { method: "POST" });
+                const data = await res.json();
+                if (data.has_tampered) {
+                    document.getElementById("kpi-integrity-status").innerHTML = '<span style="color: #ef4444;">Tampered!</span>';
+                    alert("WARNING: Checksum mismatch detected! One or more evidence files have been altered.");
+                } else {
+                    document.getElementById("kpi-integrity-status").textContent = "Intact";
+                    alert("SUCCESS: All digital evidence files match baseline SHA-256 hashes.");
+                }
+                loadEvidence();
+                loadCustodyLedger();
+            } catch (err) {
+                alert(`Error during hash verification: ${err.message}`);
+            }
         }
 
-        msgDiv.innerHTML = `
-            <div class="message-bubble">
-                ${formattedText}
-                ${sourcesHtml}
-            </div>
-            <div class="message-meta">
-                <span>${senderName}</span>
-                <span>•</span>
-                <span>${time}</span>
-                ${confidenceHtml ? `<span>•</span>${confidenceHtml}` : ""}
-            </div>
-        `;
+        async function generateIntegrityReport() {
+            try {
+                const res = await fetch("/api/report/integrity", { method: "POST" });
+                const data = await res.json();
+                alert(`Integrity Report generated at:\n${data.report_path}`);
+            } catch (err) {
+                alert(`Error generating integrity report: ${err.message}`);
+            }
+        }
 
-        ragMessagesArea.appendChild(msgDiv);
-        ragMessagesArea.scrollTop = ragMessagesArea.scrollHeight;
+        async function uploadEvidenceFile() {
+            if (!fileInput.files || fileInput.files.length === 0) {
+                alert("Please select a file to upload.");
+                return;
+            }
+
+            const file = fileInput.files[0];
+            const formData = new FormData();
+            formData.append("file", file);
+
+            const msgDiv = document.getElementById("upload-status-msg");
+            msgDiv.textContent = `Uploading and hashing ${file.name}...`;
+
+            try {
+                const res = await fetch("/api/evidence/upload", {
+                    method: "POST",
+                    body: formData
+                });
+                const data = await res.json();
+                msgDiv.innerHTML = `<span style="color: var(--green);">✓ Uploaded: ${file.name} (SHA-256: ${data.metadata?.sha256?.substring(0, 16)}...)</span>`;
+                loadEvidence();
+                loadCustodyLedger();
+                fileInput.value = "";
+            } catch (err) {
+                msgDiv.innerHTML = `<span style="color: var(--danger);">Upload failed: ${err.message}</span>`;
+            }
+        }
+
+        if (btnVerifyHashes) btnVerifyHashes.addEventListener("click", verifyHashes);
+        if (btnIntegrityReport) btnIntegrityReport.addEventListener("click", generateIntegrityReport);
+        if (btnUpload) btnUpload.addEventListener("click", uploadEvidenceFile);
+
+        loadEvidence();
+        loadCustodyLedger();
     }
 
-    // Input elements event listeners
-    ragBtnSend.addEventListener("click", sendChatMessage);
-    ragChatInput.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") {
-            sendChatMessage();
+    // -----------------------------------------------------------------------
+    // 6. IOCs & Threat Intelligence
+    // -----------------------------------------------------------------------
+    function initThreatIntel() {
+        async function loadIOCs() {
+            const tbody = document.getElementById("ioc-table-body");
+            const mitreContainer = document.getElementById("mitre-cards-container");
+
+            try {
+                const res = await fetch("/api/iocs");
+                const data = await res.json();
+                const ips = data.iocs?.ip_addresses || [];
+
+                tbody.innerHTML = ips.map(ip => {
+                    let badge = '<span class="badge-info">Internal</span>';
+                    if (ip.threat_level === "MALICIOUS") badge = '<span class="badge-critical">MALICIOUS</span>';
+                    else if (ip.threat_level === "SUSPICIOUS") badge = '<span class="badge-high">SUSPICIOUS</span>';
+                    else if (ip.threat_level.includes("COMPROMISED")) badge = '<span class="badge-medium">COMPROMISED</span>';
+
+                    return `
+                        <tr>
+                            <td class="font-mono"><strong>${ip.ip}</strong></td>
+                            <td>${badge}</td>
+                            <td><strong>${escapeHtml(ip.role)}</strong></td>
+                            <td>${escapeHtml(ip.description)}</td>
+                        </tr>
+                    `;
+                }).join("");
+
+                // Render MITRE Cards
+                const mitre = data.mitre_attack || [];
+                mitreContainer.innerHTML = mitre.map(m => `
+                    <div class="mitre-card">
+                        <div class="mitre-tactic">${escapeHtml(m.tactic)}</div>
+                        <div class="mitre-id">${m.technique_id} : ${escapeHtml(m.technique_name)}</div>
+                        <div class="mitre-desc">${escapeHtml(m.description)}</div>
+                        <div style="font-size: 11px; color: var(--color-text-muted); margin-top: 6px;">
+                            <strong>Source:</strong> ${escapeHtml(m.evidence_source)}
+                        </div>
+                    </div>
+                `).join("");
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="4">Error loading IOCs: ${err.message}</td></tr>`;
+            }
         }
-    });
 
-    // Quick start suggestions
-    const suggestionPills = document.querySelectorAll(".suggestion-pill");
-    suggestionPills.forEach(pill => {
-        pill.addEventListener("click", () => {
-            const question = pill.getAttribute("data-question");
-            ragChatInput.value = question;
-            ragChatInput.focus();
-        });
-    });
+        loadIOCs();
+    }
 
-    // File Upload Handler
-    ragFileInput.addEventListener("change", async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
+    // -----------------------------------------------------------------------
+    // 7. Hex & Strings Inspector
+    // -----------------------------------------------------------------------
+    function initInspector() {
+        const fileSelect = document.getElementById("inspector-file-select");
+        const btnHex = document.getElementById("btn-load-hex");
+        const btnStrings = document.getElementById("btn-load-strings");
+        const container = document.getElementById("inspector-viewer-container");
 
-        ragUploadStatus.classList.remove("hidden");
-        ragUploadStatusText.textContent = `Indexing ${file.name}...`;
+        async function loadHex() {
+            const filename = fileSelect.value;
+            if (!filename) {
+                alert("Please select an evidence file.");
+                return;
+            }
 
-        const formData = new FormData();
-        formData.append("file", file);
+            container.innerHTML = '<p style="text-align: center; padding: 20px;">Generating hex dump...</p>';
+            try {
+                const res = await fetch(`/api/evidence/hex?filename=${encodeURIComponent(filename)}&offset=0&length=2048`);
+                const data = await res.json();
+                if (data.error) {
+                    container.innerHTML = `<p style="color: var(--danger);">${data.error}</p>`;
+                    return;
+                }
 
-        try {
-            const res = await fetch("/api/chat/upload", {
-                method: "POST",
-                body: formData
+                container.innerHTML = `
+                    <div style="margin-bottom: 8px; font-size: 12px;">
+                        <strong>Viewing:</strong> ${escapeHtml(data.filename)} | Size: ${data.total_size} bytes (Offset: 0 - ${data.bytes_returned})
+                    </div>
+                    <pre class="hex-viewer">${escapeHtml(data.hex_dump)}</pre>
+                `;
+            } catch (err) {
+                container.innerHTML = `<p style="color: var(--danger);">Hex dump error: ${err.message}</p>`;
+            }
+        }
+
+        async function loadStrings() {
+            const filename = fileSelect.value;
+            if (!filename) {
+                alert("Please select an evidence file.");
+                return;
+            }
+
+            container.innerHTML = '<p style="text-align: center; padding: 20px;">Extracting printable strings...</p>';
+            try {
+                const res = await fetch(`/api/evidence/strings?filename=${encodeURIComponent(filename)}&min_length=4`);
+                const data = await res.json();
+                if (data.error) {
+                    container.innerHTML = `<p style="color: var(--danger);">${data.error}</p>`;
+                    return;
+                }
+
+                const strList = data.strings || [];
+                container.innerHTML = `
+                    <div style="margin-bottom: 8px; font-size: 12px;">
+                        <strong>Artifact:</strong> ${escapeHtml(data.filename)} | Found <strong>${data.total_found}</strong> printable strings (Min length: 4)
+                    </div>
+                    <div class="strings-viewer">
+                        ${strList.map(s => `<div class="string-item">${escapeHtml(s)}</div>`).join("")}
+                    </div>
+                `;
+            } catch (err) {
+                container.innerHTML = `<p style="color: var(--danger);">Strings error: ${err.message}</p>`;
+            }
+        }
+
+        if (btnHex) btnHex.addEventListener("click", loadHex);
+        if (btnStrings) btnStrings.addEventListener("click", loadStrings);
+    }
+
+    // -----------------------------------------------------------------------
+    // 8. AI Incident Copilot
+    // -----------------------------------------------------------------------
+    function initAICopilot() {
+        const btnGen = document.getElementById("btn-generate-ai-report");
+        const preview = document.getElementById("ai-report-preview-container");
+
+        async function generateReport() {
+            preview.innerHTML = '<p style="text-align: center; padding: 40px;"><span class="material-icons-round" style="font-size: 32px; animation: spin 1s infinite linear;">sync</span><br>Synthesizing evidence with AI Incident Copilot...</p>';
+
+            try {
+                const res = await fetch("/api/report/generate", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ model: "llama3.2:1b" })
+                });
+                const data = await res.json();
+                displayReport(data.report_markdown || data.report);
+            } catch (err) {
+                preview.innerHTML = `<p style="color: var(--danger);">Report generation failed: ${err.message}</p>`;
+            }
+        }
+
+        async function loadExistingReport() {
+            try {
+                const res = await fetch("/api/report/get");
+                const data = await res.json();
+                if (data.exists && data.report) {
+                    displayReport(data.report);
+                }
+            } catch (err) {
+                console.error("Report check error:", err);
+            }
+        }
+
+        function displayReport(markdownText) {
+            // Render basic markdown into HTML
+            let html = markdownText
+                .replace(/^# (.*$)/gim, '<h2 style="color: var(--cyan); margin-top: 18px; margin-bottom: 10px;">$1</h2>')
+                .replace(/^## (.*$)/gim, '<h3 style="color: var(--color-text-heading); margin-top: 16px; margin-bottom: 8px;">$1</h3>')
+                .replace(/^### (.*$)/gim, '<h4 style="color: var(--purple); margin-top: 14px; margin-bottom: 6px;">$1</h4>')
+                .replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>')
+                .replace(/`(.*?)`/gim, '<code style="background: rgba(0,0,0,0.06); padding: 2px 4px; border-radius: 4px; font-family: monospace;">$1</code>')
+                .replace(/\n\n/gim, '<br><br>');
+
+            preview.innerHTML = html;
+        }
+
+        // Action chips
+        document.querySelectorAll("[data-preset]").forEach(btn => {
+            btn.addEventListener("click", () => {
+                generateReport();
             });
-
-            if (!res.ok) throw new Error("Upload and index failed");
-            
-            const data = await res.json();
-            showToast(`✅ ${file.name} uploaded and indexed successfully!`);
-            
-            // Reload evidence file lists
-            loadRagEvidence();
-            
-            // Append a notification message in the chat
-            appendChatMessage("ai", `ℹ️ System: Newly uploaded evidence **${file.name}** has been processed and indexed into the vector DB successfully. You can now query details inside it.`);
-
-        } catch (err) {
-            console.error("Upload error:", err);
-            showToast("❌ Failed to upload evidence file.");
-        } finally {
-            ragUploadStatus.classList.add("hidden");
-            e.target.value = null; // Reset file input
-        }
-    });
-
-    // Sync models selection between both dropdowns
-    const ragModelSelect = document.getElementById("rag-model-select");
-    const modelSelect = document.getElementById("model-select");
-    if (ragModelSelect && modelSelect) {
-        ragModelSelect.addEventListener("change", () => {
-            modelSelect.value = ragModelSelect.value;
         });
-        modelSelect.addEventListener("change", () => {
-            ragModelSelect.value = modelSelect.value;
+
+        if (btnGen) btnGen.addEventListener("click", generateReport);
+        loadExistingReport();
+    }
+
+    // -----------------------------------------------------------------------
+    // 9. AI Forensic Chatbot
+    // -----------------------------------------------------------------------
+    function initChatbot() {
+        const input = document.getElementById("chat-query-input");
+        const btnSend = document.getElementById("btn-send-chat");
+        const messagesContainer = document.getElementById("chat-messages-container");
+        const modelSelect = document.getElementById("chat-model-select");
+
+        async function sendQuery(queryText) {
+            const text = (queryText || input.value || "").trim();
+            if (!text) return;
+
+            // Append User Message
+            appendMessage("user", text);
+            input.value = "";
+
+            // Show Typing Indicator
+            const typingId = "typing-" + Date.now();
+            appendMessage("bot", '<span style="color: var(--color-text-muted); font-style: italic;">Consulting evidence repository...</span>', typingId);
+
+            try {
+                const res = await fetch("/api/chat/query", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        question: text,
+                        model: modelSelect ? modelSelect.value : "llama3.2:1b"
+                    })
+                });
+
+                const data = await res.json();
+                const typingEl = document.getElementById(typingId);
+                if (typingEl) typingEl.remove();
+
+                if (!res.ok) {
+                    appendMessage("bot", `<span style="color: var(--danger);">Error: ${data.detail || "Unknown error"}</span>`);
+                    return;
+                }
+
+                // Format response
+                let botHtml = data.answer.replace(/\n/g, "<br>").replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>").replace(/`(.*?)`/g, "<code>$1</code>");
+                let metaHtml = '<div style="margin-top: 8px; font-size: 11px; color: var(--color-text-muted); display: flex; gap: 8px; flex-wrap: wrap;">';
+
+                if (data.sources && data.sources.length > 0) {
+                    metaHtml += `<span><strong>Sources:</strong> ${data.sources.map(s => `<code style="background: rgba(0,0,0,0.06); padding: 1px 4px; border-radius: 3px;">${escapeHtml(s)}</code>`).join(" ")}</span>`;
+                }
+                if (data.confidence) {
+                    metaHtml += `<span><strong>Confidence:</strong> ${(data.confidence * 100).toFixed(0)}%</span>`;
+                }
+                if (data.elapsed_seconds) {
+                    metaHtml += `<span><strong>Latency:</strong> ${data.elapsed_seconds}s</span>`;
+                }
+                metaHtml += '</div>';
+
+                appendMessage("bot", botHtml + metaHtml);
+            } catch (err) {
+                const typingEl = document.getElementById(typingId);
+                if (typingEl) typingEl.remove();
+                appendMessage("bot", `<span style="color: var(--danger);">Query failed: ${err.message}</span>`);
+            }
+        }
+
+        function appendMessage(sender, htmlContent, customId) {
+            const div = document.createElement("div");
+            div.className = `chat-message ${sender}`;
+            if (customId) div.id = customId;
+
+            if (sender === "user") {
+                div.style.cssText = "align-self: flex-end; background: rgba(8, 145, 178, 0.1); border: 1px solid rgba(8, 145, 178, 0.2); padding: 12px 16px; border-radius: 12px 12px 2px 12px; max-width: 80%; font-size: 13px;";
+                div.innerHTML = `<div>${escapeHtml(htmlContent)}</div>`;
+            } else {
+                div.style.cssText = "align-self: flex-start; background: var(--bg-card); border: 1px solid var(--border-glass); padding: 14px 18px; border-radius: 12px 12px 12px 2px; max-width: 85%; font-size: 13px; line-height: 1.5;";
+                div.innerHTML = `<div style="font-weight: 600; color: var(--cyan); margin-bottom: 6px; font-size: 12px;">AI Forensic Copilot</div><div>${htmlContent}</div>`;
+            }
+
+            messagesContainer.appendChild(div);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        if (btnSend) btnSend.addEventListener("click", () => sendQuery());
+        if (input) {
+            input.addEventListener("keydown", (e) => {
+                if (e.key === "Enter") sendQuery();
+            });
+        }
+
+        // Preset Question Chips
+        document.querySelectorAll(".chat-preset-chip").forEach(chip => {
+            chip.addEventListener("click", () => {
+                const q = chip.getAttribute("data-q");
+                if (q) sendQuery(q);
+            });
         });
     }
 
-    // 6. Init Calls & Loops
-    loadSystemStats();
-    loadOllamaStats();
-    loadProcesses();
-    loadArtifactsFiles();
-    loadExistingReport();
-
-    // Poll resource utilization every 3 seconds
-    setInterval(loadSystemStats, 3000);
-
+    // Helper: Escape HTML
+    function escapeHtml(text) {
+        if (!text) return "";
+        return String(text)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
 });
-

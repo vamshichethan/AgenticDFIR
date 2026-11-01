@@ -1,33 +1,73 @@
+"""
+AI Cyber Forensics & Incident Response Platform - FastAPI Backend
+Provides comprehensive RESTful endpoints for live system triage, cryptographic integrity,
+super-timeline correlation, IOC threat intelligence, Chain of Custody, and Hybrid AI Copilot.
+"""
+
 import os
 import sys
+import shutil
 import platform
 import subprocess
-import shutil
-import json
-import urllib.request
-import urllib.error
 from pathlib import Path
 from datetime import datetime
 
 import psutil
-from fastapi import FastAPI, HTTPException, UploadFile, File
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, HTTPException, UploadFile, File, Query, Response
+from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 # Dynamically resolve PROJECT_ROOT to the repository directory
 PROJECT_ROOT = Path(__file__).resolve().parent
-
-# Ensure forensic_toolkit packages can be imported
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from forensic_toolkit.hashing import calculate_sha256
+# Forensic Toolkit Imports
+from forensic_toolkit.hashing import calculate_sha256, calculate_md5, calculate_entropy, get_file_metadata
+from forensic_toolkit.live_forensics import (
+    get_live_system_metrics,
+    analyze_processes,
+    analyze_network_sockets,
+    analyze_persistence,
+    analyze_user_accounts
+)
+from forensic_toolkit.super_timeline import build_super_timeline, export_timeline_csv
+from forensic_toolkit.ioc_analyzer import scan_evidence_directory, extract_iocs_from_text, MITRE_ATTACK_MAPPING
+from forensic_toolkit.inspector import get_hex_dump, extract_strings
+from forensic_toolkit.chain_of_custody import load_chain_of_custody, sync_evidence_items, record_custody_transfer
+from forensic_toolkit.report import generate_report as run_report_gen, get_available_models, query_ollama
 from forensic_toolkit.ollama_info import get_ollama_path
 
-app = FastAPI(title="AI Cyber Forensics Toolkit Web API")
+app = FastAPI(
+    title="AgenticDFIR - AI Cyber Forensics & Incident Response Platform",
+    description="Enterprise DFIR Toolkit with Live Host Forensics, Super-Timeline Correlation, and Hybrid AI Copilot",
+    version="2.0.0"
+)
+
+# Enable CORS for cloud deployment and cross-origin access
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+@app.get("/healthz")
+def health_check():
+    """Health check endpoint for cloud orchestrators (Render, Kubernetes, Docker)."""
+    return {
+        "status": "healthy",
+        "service": "AgenticDFIR",
+        "version": "2.0.0",
+        "timestamp": datetime.now().isoformat()
+    }
 
 EVIDENCE_DIR = PROJECT_ROOT / "Evidence"
-
+REPORTS_DIR = PROJECT_ROOT / "Reports"
+HASHES_DIR = PROJECT_ROOT / "Hashes"
+TIMELINE_DIR = PROJECT_ROOT / "Timeline"
 
 # ---------------------------------------------------------------------------
 # RAG Assistant Lazy Loader & Initialization
@@ -36,21 +76,12 @@ EVIDENCE_DIR = PROJECT_ROOT / "Evidence"
 rag_assistant = None
 current_rag_model = "llama3.2:1b"
 
+
 def init_rag_assistant(model_name=None):
     global rag_assistant, current_rag_model
     if model_name:
         current_rag_model = model_name
-    
-    # Check if VectorDB directory exists and contains files. If not, auto-create it.
-    vector_db_path = PROJECT_ROOT / "VectorDB"
-    if not vector_db_path.exists() or not list(vector_db_path.glob("*")):
-        print("VectorDB not found or empty. Auto-building from Evidence folder...")
-        try:
-            from rag_assistant.create_embeddings import create_vector_database
-            create_vector_database()
-        except Exception as e:
-            print(f"Error building vector database: {e}")
-            
+
     try:
         from rag_assistant.rag_engine import DigitalForensicsAssistant
         rag_assistant = DigitalForensicsAssistant(model_name=current_rag_model)
@@ -58,157 +89,70 @@ def init_rag_assistant(model_name=None):
         print(f"Error initializing DigitalForensicsAssistant: {e}")
         rag_assistant = None
 
+
 @app.on_event("startup")
 def startup_event():
+    # Sync Chain of Custody ledger on startup
+    try:
+        sync_evidence_items(EVIDENCE_DIR)
+    except Exception as e:
+        print(f"Chain of Custody init note: {e}")
+    # Initialize RAG Assistant
     init_rag_assistant()
 
 
 # ---------------------------------------------------------------------------
-# Helper: query local Ollama LLM
-# ---------------------------------------------------------------------------
-
-def query_ollama(prompt: str, model: str) -> str:
-    """Query the local Ollama API to generate text."""
-    url = "http://localhost:11434/api/generate"
-    data = {
-        "model": model,
-        "prompt": prompt,
-        "stream": False
-    }
-    try:
-        req_body = json.dumps(data).encode("utf-8")
-        req = urllib.request.Request(
-            url,
-            data=req_body,
-            headers={"Content-Type": "application/json"},
-            method="POST"
-        )
-        with urllib.request.urlopen(req, timeout=120) as response:
-            res_body = response.read().decode("utf-8")
-            res_data = json.loads(res_body)
-            return res_data.get("response", "")
-    except urllib.error.URLError as e:
-        return f"Error: Could not query Ollama. Server is offline. Details: {e}"
-    except Exception as e:
-        return f"Error: {e}"
-
-
-def get_available_models():
-    """Query local Ollama instance for installed models."""
-    try:
-        req = urllib.request.Request("http://localhost:11434/api/tags", method="GET")
-        with urllib.request.urlopen(req, timeout=3) as response:
-            res_body = response.read().decode("utf-8")
-            res_data = json.loads(res_body)
-            return [m["name"] for m in res_data.get("models", [])]
-    except Exception:
-        return []
-
-
-# ---------------------------------------------------------------------------
-# /api/system_info
+# 1. System & Host Diagnostics Endpoints
 # ---------------------------------------------------------------------------
 
 @app.get("/api/system_info")
 def get_system_info():
+    """Retrieve comprehensive host hardware, operating system, and memory metrics."""
     try:
-        cpu_usage = psutil.cpu_percent(interval=0.5)
-        mem = psutil.virtual_memory()
-        disk = psutil.disk_usage("/") if platform.system() != "Windows" else psutil.disk_usage("C:\\")
-
-        return {
-            "hostname": platform.node(),
-            "os": platform.system(),
-            "release": platform.release(),
-            "version": platform.version(),
-            "machine": platform.machine(),
-            "processor": platform.processor(),
-            "cpu_count": psutil.cpu_count(logical=True),
-            "cpu_usage_percent": cpu_usage,
-            "memory": {
-                "total_gb": round(mem.total / (1024 ** 3), 2),
-                "used_gb": round(mem.used / (1024 ** 3), 2),
-                "available_gb": round(mem.available / (1024 ** 3), 2),
-                "percentage": mem.percent
-            },
-            "disk": {
-                "total_gb": round(disk.total / (1024 ** 3), 2),
-                "used_gb": round(disk.used / (1024 ** 3), 2),
-                "free_gb": round(disk.free / (1024 ** 3), 2),
-                "percentage": disk.percent
-            }
-        }
+        return get_live_system_metrics()
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# ---------------------------------------------------------------------------
-# /api/ollama_info
-# ---------------------------------------------------------------------------
-
 @app.get("/api/ollama_info")
 def get_ollama_info():
+    """Check local Ollama installation, running daemon status, and installed models."""
     try:
         ollama_cmd = get_ollama_path()
-
-        # Version
-        version = ""
+        version = "Unknown"
         try:
             result = subprocess.run(
                 f"{ollama_cmd} --version",
                 shell=True, capture_output=True, text=True, timeout=5
             )
-            version = result.stdout.strip()
+            version = result.stdout.strip() or "Unknown"
         except Exception:
-            version = "Unknown"
+            pass
 
-        # Installed models
         installed_models = get_available_models()
 
-        # Service running check (process list)
+        # Service running check
         service_running = False
         try:
             if platform.system() == "Windows":
-                result = subprocess.run(
-                    'tasklist | findstr /I "ollama"',
-                    shell=True, capture_output=True, text=True, timeout=5
-                )
-                service_running = bool(result.stdout.strip())
+                res = subprocess.run('tasklist | findstr /I "ollama"', shell=True, capture_output=True, text=True, timeout=3)
+                service_running = bool(res.stdout.strip())
             else:
-                result = subprocess.run(
-                    "pgrep -fl ollama",
-                    shell=True, capture_output=True, text=True, timeout=5
-                )
-                service_running = bool(result.stdout.strip())
+                res = subprocess.run("pgrep -fl ollama", shell=True, capture_output=True, text=True, timeout=3)
+                service_running = bool(res.stdout.strip())
         except Exception:
             pass
 
-        # Port 11434 listening
-        port_listening = False
-        try:
-            if platform.system() == "Windows":
-                result = subprocess.run(
-                    "netstat -ano | findstr 11434",
-                    shell=True, capture_output=True, text=True, timeout=5
-                )
-                port_listening = bool(result.stdout.strip())
-            else:
-                result = subprocess.run(
-                    "ss -lntp | grep 11434",
-                    shell=True, capture_output=True, text=True, timeout=5
-                )
-                port_listening = bool(result.stdout.strip())
-        except Exception:
-            pass
+        # Port 11434 check
+        port_listening = len(installed_models) > 0 or service_running
 
-        # Resolve installed path
         installed_path = shutil.which("ollama") or ollama_cmd
 
         return {
             "version": version,
             "installed_path": installed_path,
             "installed_models": installed_models,
-            "service_running": service_running,
+            "service_running": service_running or len(installed_models) > 0,
             "port_listening": port_listening
         }
     except Exception as e:
@@ -216,168 +160,77 @@ def get_ollama_info():
 
 
 # ---------------------------------------------------------------------------
-# /api/processes
+# 2. Live Host Forensics & Anomaly Triage Endpoints
 # ---------------------------------------------------------------------------
 
-@app.get("/api/processes")
-def get_processes():
+@app.get("/api/forensics/processes")
+def get_forensic_processes():
+    """Live process enumeration with parent-child tree mapping and DFIR anomaly scoring."""
     try:
-        ollama_processes = []
-        for proc in psutil.process_iter(["pid", "name", "cpu_percent", "memory_info"]):
-            try:
-                if "ollama" in proc.info["name"].lower():
-                    ollama_processes.append({
-                        "pid": proc.info["pid"],
-                        "name": proc.info["name"],
-                        "cpu_percent": proc.info["cpu_percent"],
-                        "memory_mb": round(proc.info["memory_info"].rss / (1024 ** 2), 2)
-                        if proc.info["memory_info"] else 0
-                    })
-            except (psutil.NoSuchProcess, psutil.AccessDenied):
-                pass
-
-        return {"ollama_processes": ollama_processes}
+        return analyze_processes()
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# ---------------------------------------------------------------------------
-# /api/artifacts
-# ---------------------------------------------------------------------------
+# Compatibility alias
+@app.get("/api/processes")
+def get_processes_alias():
+    return get_forensic_processes()
 
-@app.get("/api/artifacts")
-def get_artifacts():
+
+@app.get("/api/forensics/sockets")
+def get_forensic_sockets():
+    """Active network sockets with external IP threat classification."""
     try:
-        ollama_cmd = get_ollama_path()
-        home = Path.home()
-        model_dir = home / ".ollama"
+        return analyze_network_sockets()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-        files = []
-        total_files = 0
-        if model_dir.exists():
-            for root, _, filenames in os.walk(model_dir):
-                for fname in filenames:
-                    fpath = Path(root) / fname
-                    try:
-                        size_mb = round(fpath.stat().st_size / (1024 ** 2), 3)
-                        files.append({
-                            "name": fname,
-                            "path": str(fpath),
-                            "size_mb": size_mb
-                        })
-                        total_files += 1
-                    except Exception:
-                        pass
-            files = files[:50]  # cap at 50 entries
 
+@app.get("/api/forensics/persistence")
+def get_forensic_persistence():
+    """Cross-platform autoruns: LaunchAgents, Crontabs, Startup folders, and Shell profiles."""
+    try:
+        return analyze_persistence()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/forensics/users")
+def get_forensic_users():
+    """System accounts, privilege levels, and active login sessions."""
+    try:
+        return analyze_user_accounts()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# Compatibility alias for artifacts
+@app.get("/api/artifacts")
+def get_artifacts_compat():
+    try:
         return {
-            "installed_path": shutil.which("ollama") or ollama_cmd,
-            "model_directory": str(model_dir),
-            "total_files": total_files,
-            "files": files
+            "system": get_live_system_metrics(),
+            "persistence": analyze_persistence(),
+            "processes_summary": analyze_processes()["suspicious_count"],
+            "sockets_summary": analyze_network_sockets()["suspicious_count"]
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 # ---------------------------------------------------------------------------
-# /api/hashing
+# 3. Cryptographic Evidence Hashing & Tamper Detection
 # ---------------------------------------------------------------------------
 
 @app.post("/api/hashing")
 def run_hashing():
-    evidence_dir = PROJECT_ROOT / "Evidence"
-    hash_dir = PROJECT_ROOT / "Hashes"
-
-    if not evidence_dir.exists():
+    """Calculate multi-hashes (MD5, SHA-256) and Shannon Entropy for all evidence files."""
+    if not EVIDENCE_DIR.exists():
         raise HTTPException(status_code=404, detail="Evidence directory not found")
 
-    hash_dir.mkdir(exist_ok=True)
-    output_file = hash_dir / "sha256_hashes.txt"
-
-    # Read existing baseline hashes if present
-    baseline_hashes = {}
-    if output_file.exists():
-        try:
-            content = output_file.read_text(encoding="utf-8")
-            records = content.split("\n\n")
-            for rec in records:
-                lines = [l.strip() for l in rec.split("\n") if l.strip()]
-                if len(lines) >= 2:
-                    baseline_hashes[lines[0]] = lines[1]
-        except Exception:
-            pass
-
-    is_first_run = len(baseline_hashes) == 0
-    results = []
-    has_tampered = False
-
-    # Compute current hashes
-    for filepath in evidence_dir.glob("*"):
-        if filepath.is_file():
-            digest = calculate_sha256(filepath)
-
-            status = "verified"
-            baseline_hash = baseline_hashes.get(filepath.name, "")
-
-            if not is_first_run:
-                if filepath.name in baseline_hashes:
-                    if digest != baseline_hash:
-                        status = "tampered"
-                        has_tampered = True
-                else:
-                    status = "new"
-            else:
-                baseline_hash = digest
-
-            results.append({
-                "filename": filepath.name,
-                "hash": digest,
-                "baseline_hash": baseline_hash,
-                "size_bytes": filepath.stat().st_size,
-                "status": status
-            })
-
-    # Save baseline on first run
-    try:
-        if is_first_run:
-            with open(output_file, "w", encoding="utf-8") as f:
-                for res in results:
-                    f.write(f"{res['filename']}\n{res['hash']}\n\n")
-        else:
-            verify_file = hash_dir / "sha256_hashes_verification.txt"
-            with open(verify_file, "w", encoding="utf-8") as f:
-                f.write(f"Verification Run: {datetime.now()}\n\n")
-                for res in results:
-                    f.write(f"{res['filename']}\nHash: {res['hash']}\nStatus: {res['status']}\n\n")
-
-        return {
-            "status": "success",
-            "has_tampered": has_tampered,
-            "hashes": results,
-            "is_first_run": is_first_run
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-# ---------------------------------------------------------------------------
-# /api/report/integrity
-# ---------------------------------------------------------------------------
-
-@app.post("/api/report/integrity")
-def generate_integrity_report():
-    evidence_dir = PROJECT_ROOT / "Evidence"
-    hash_dir = PROJECT_ROOT / "Hashes"
-    report_dir = PROJECT_ROOT / "Reports"
-
-    if not evidence_dir.exists():
-        raise HTTPException(status_code=404, detail="Evidence directory not found")
-
-    hash_dir.mkdir(exist_ok=True)
-    report_dir.mkdir(exist_ok=True)
-    baseline_file = hash_dir / "sha256_hashes.txt"
-    report_file = report_dir / "Evidence_Integrity_Report.md"
+    HASHES_DIR.mkdir(exist_ok=True)
+    baseline_file = HASHES_DIR / "sha256_hashes.txt"
 
     baseline_hashes = {}
     if baseline_file.exists():
@@ -391,73 +244,120 @@ def generate_integrity_report():
         except Exception:
             pass
 
-    tampered_files = []
-    verified_files = []
-    new_files = []
+    is_first_run = len(baseline_hashes) == 0
+    results = []
+    has_tampered = False
 
-    for filepath in evidence_dir.glob("*"):
+    for filepath in sorted(EVIDENCE_DIR.glob("*")):
         if filepath.is_file():
-            digest = calculate_sha256(filepath)
-            if filepath.name in baseline_hashes:
-                baseline_hash = baseline_hashes[filepath.name]
-                if digest == baseline_hash:
-                    verified_files.append((filepath.name, digest))
+            meta = get_file_metadata(filepath)
+            status = "verified"
+            baseline_hash = baseline_hashes.get(filepath.name, "")
+
+            if not is_first_run:
+                if filepath.name in baseline_hashes:
+                    if meta["sha256"] != baseline_hash:
+                        status = "tampered"
+                        has_tampered = True
                 else:
-                    tampered_files.append((filepath.name, baseline_hash, digest))
+                    status = "new"
             else:
-                new_files.append((filepath.name, digest))
+                baseline_hash = meta["sha256"]
+
+            meta["status"] = status
+            meta["baseline_hash"] = baseline_hash
+            results.append(meta)
+
+    try:
+        if is_first_run:
+            with open(baseline_file, "w", encoding="utf-8") as f:
+                for res in results:
+                    f.write(f"{res['filename']}\n{res['sha256']}\n\n")
+        else:
+            verify_file = HASHES_DIR / "sha256_hashes_verification.txt"
+            with open(verify_file, "w", encoding="utf-8") as f:
+                f.write(f"Verification Run: {datetime.now()}\n\n")
+                for res in results:
+                    f.write(f"{res['filename']}\nHash: {res['sha256']}\nStatus: {res['status']}\n\n")
+
+        # Also update Chain of Custody
+        sync_evidence_items(EVIDENCE_DIR)
+
+        return {
+            "status": "success",
+            "has_tampered": has_tampered,
+            "hashes": results,
+            "is_first_run": is_first_run
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/report/integrity")
+def generate_integrity_report():
+    """Produce formal evidence integrity verification report."""
+    if not EVIDENCE_DIR.exists():
+        raise HTTPException(status_code=404, detail="Evidence directory not found")
+
+    REPORTS_DIR.mkdir(exist_ok=True)
+    report_file = REPORTS_DIR / "Evidence_Integrity_Report.md"
+
+    res = run_hashing()
+    hashes = res["hashes"]
+    has_tampered = res["has_tampered"]
+
+    tampered_files = [h for h in hashes if h["status"] == "tampered"]
+    verified_files = [h for h in hashes if h["status"] == "verified"]
+    new_files = [h for h in hashes if h["status"] == "new"]
 
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    report = f"""# FORENSIC EVIDENCE INTEGRITY REPORT
+    report = f"""# FORENSIC EVIDENCE INTEGRITY & TAMPER VERIFICATION REPORT
 
-Generated on: {now_str}
-Verification Status: {"🔴 WARNING - INTEGRITY VIOLATION DETECTED" if tampered_files else "🟢 SUCCESS - ALL FILES VERIFIED"}
+**Report Generated:** {now_str}  
+**Verification Verdict:** {"🔴 CRITICAL - INTEGRITY VIOLATION DETECTED" if has_tampered else "🟢 SUCCESS - ALL EVIDENCE VERIFIED INTACT"}  
 
 ---
 
 ## 1. Executive Summary
-This report verifies the integrity of the forensic evidence files against the baseline checksums recorded at the time of acquisition.
+This report documents the cryptographic integrity verification of all acquired digital evidence files. Hashes were verified against baseline checksums established during acquisition.
 
-{"⚠️ CRITICAL WARNING: Tampering or corruption has been detected in the evidence files listed below. The integrity of the dataset is compromised." if tampered_files else "All analyzed evidence files match their original acquisition checksums. Data integrity is confirmed."}
+{"⚠️ CRITICAL TAMPER ALERT: Checksum mismatch detected! One or more evidence files have been altered or corrupted." if has_tampered else "All examined evidence files match their acquisition checksums exactly. Chain of custody integrity is confirmed."}
 
-## 2. Integrity Verification Results
+## 2. Integrity Verification Matrix
 
-### 🔴 Tampered / Mismatched Files ({len(tampered_files)})
-{"*None*" if not tampered_files else ""}
+### 🔴 Tampered Artifacts ({len(tampered_files)})
 """
     if tampered_files:
-        report += "| File Name | Baseline SHA-256 Checksum | Current SHA-256 Checksum | Status |\n"
-        report += "| --- | --- | --- | --- |\n"
-        for name, baseline, current in tampered_files:
-            report += f"| `{name}` | `{baseline}` | `{current}` | ❌ TAMPERED |\n"
+        report += "| File Name | Baseline SHA-256 | Current SHA-256 | Current MD5 | Entropy | Status |\n"
+        report += "| :--- | :--- | :--- | :--- | :--- | :--- |\n"
+        for t in tampered_files:
+            report += f"| `{t['filename']}` | `{t['baseline_hash']}` | `{t['sha256']}` | `{t['md5']}` | {t['entropy']} | ❌ TAMPERED |\n"
+    else:
+        report += "*No tampered files detected.*\n"
 
-    report += f"""
-### 🟢 Verified / Intact Files ({len(verified_files)})
-{"*None*" if not verified_files else ""}
-"""
+    report += f"\n### 🟢 Verified Artifacts ({len(verified_files)})\n"
     if verified_files:
-        report += "| File Name | Verified SHA-256 Checksum | Status |\n"
-        report += "| --- | --- | --- |\n"
-        for name, digest in verified_files:
-            report += f"| `{name}` | `{digest}` | ✅ VERIFIED |\n"
+        report += "| File Name | Verified SHA-256 Checksum | MD5 Checksum | Entropy | Status |\n"
+        report += "| :--- | :--- | :--- | :--- | :--- |\n"
+        for v in verified_files:
+            report += f"| `{v['filename']}` | `{v['sha256']}` | `{v['md5']}` | {v['entropy']} | ✅ VERIFIED |\n"
+    else:
+        report += "*None*\n"
 
     if new_files:
-        report += f"""
-### 🟡 Untracked / New Files ({len(new_files)})
-"""
-        report += "| File Name | Current SHA-256 Checksum | Status |\n"
-        report += "| --- | --- | --- |\n"
-        for name, digest in new_files:
-            report += f"| `{name}` | `{digest}` | ⚠️ NEW UNTRACKED |\n"
+        report += f"\n### 🟡 Untracked / Newly Added Artifacts ({len(new_files)})\n"
+        report += "| File Name | SHA-256 Checksum | Size | Status |\n| :--- | :--- | :--- | :--- |\n"
+        for n in new_files:
+            report += f"| `{n['filename']}` | `{n['sha256']}` | {n['size_bytes']} B | ⚠️ NEW UNTRACKED |\n"
 
-    report += "\n---\nReport generated automatically by the AI Cyber Forensics Toolkit.\n"
+    report += "\n---\n*Report generated automatically by the AI Cyber Forensics Toolkit.*\n"
 
     try:
         report_file.write_text(report, encoding="utf-8")
         return {
             "status": "success",
             "report_path": str(report_file),
-            "has_tampered": len(tampered_files) > 0,
+            "has_tampered": has_tampered,
             "report_content": report
         }
     except Exception as e:
@@ -465,163 +365,249 @@ This report verifies the integrity of the forensic evidence files against the ba
 
 
 # ---------------------------------------------------------------------------
-# /api/timeline
+# 4. Chain of Custody & Legal Evidence Preservation
 # ---------------------------------------------------------------------------
 
-@app.post("/api/timeline")
-def run_timeline():
-    evidence_dir = PROJECT_ROOT / "Evidence"
-    timeline_dir = PROJECT_ROOT / "Timeline"
-
-    if not evidence_dir.exists():
-        raise HTTPException(status_code=404, detail="Evidence directory not found")
-
-    timeline_dir.mkdir(exist_ok=True)
-    output_file = timeline_dir / "timeline.txt"
-
-    events = []
+@app.get("/api/custody/ledger")
+def get_custody_ledger():
+    """Retrieve the full legal Chain of Custody record."""
     try:
-        with open(output_file, "w", encoding="utf-8") as f:
-            for filepath in sorted(evidence_dir.iterdir()):
-                if filepath.is_file():
-                    mtime = datetime.fromtimestamp(filepath.stat().st_mtime)
-                    mtime_str = mtime.strftime("%Y-%m-%d %H:%M:%S.%f")
-                    events.append({
-                        "filename": filepath.name,
-                        "modified_time": mtime_str
-                    })
-                    f.write(f"{mtime_str}  {filepath.name}\n")
-        return {"status": "success", "file_written": str(output_file), "timeline": events}
+        return sync_evidence_items(EVIDENCE_DIR)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class CustodyTransferRequest(BaseModel):
+    released_by: str
+    received_by: str
+    purpose: str
+    notes: str = ""
+
+
+@app.post("/api/custody/transfer")
+def add_custody_transfer(request: CustodyTransferRequest):
+    """Log an official evidence custody transfer entry."""
+    try:
+        ledger = record_custody_transfer(
+            released_by=request.released_by,
+            received_by=request.received_by,
+            purpose=request.purpose,
+            notes=request.notes
+        )
+        return {"status": "success", "ledger": ledger}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 # ---------------------------------------------------------------------------
-# /api/report/generate
+# 5. Super-Timeline & Multi-Source Event Correlation
 # ---------------------------------------------------------------------------
+
+@app.get("/api/timeline")
+@app.post("/api/timeline")
+def get_timeline():
+    """Build and retrieve master chronological super-timeline across all evidence logs."""
+    try:
+        timeline_data = build_super_timeline(EVIDENCE_DIR)
+        return {
+            "status": "success",
+            "timeline": timeline_data["events"],
+            "summary": {
+                "total_events": timeline_data["total_events"],
+                "severity_summary": timeline_data["severity_summary"],
+                "kill_chain_summary": timeline_data["kill_chain_summary"],
+                "suspicious_ips": timeline_data["suspicious_ips"],
+                "compromised_users": timeline_data["compromised_users"]
+            }
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/timeline/export/csv")
+def export_timeline_csv_endpoint():
+    """Export the forensic super-timeline to CSV format."""
+    try:
+        timeline_data = build_super_timeline(EVIDENCE_DIR)
+        csv_str = export_timeline_csv(timeline_data["events"])
+        return Response(
+            content=csv_str,
+            media_type="text/csv",
+            headers={"Content-Disposition": "attachment; filename=Forensic_Timeline.csv"}
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ---------------------------------------------------------------------------
+# 6. Indicators of Compromise (IOC) & MITRE ATT&CK Endpoints
+# ---------------------------------------------------------------------------
+
+@app.get("/api/iocs")
+def get_all_iocs():
+    """Extract and correlate all Indicators of Compromise and MITRE ATT&CK mappings."""
+    try:
+        return scan_evidence_directory(EVIDENCE_DIR)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class ScanTextRequest(BaseModel):
+    text: str
+
+
+@app.post("/api/iocs/scan-text")
+def scan_text_for_iocs(request: ScanTextRequest):
+    """Scan raw text or pasted log snippet for IOCs in real-time."""
+    try:
+        return extract_iocs_from_text(request.text)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/mitre")
+def get_mitre_mapping():
+    """Retrieve full MITRE ATT&CK matrix alignment for the incident."""
+    return {"tactics_and_techniques": MITRE_ATTACK_MAPPING}
+
+
+# ---------------------------------------------------------------------------
+# 7. Raw Evidence Hex & String Inspector
+# ---------------------------------------------------------------------------
+
+@app.get("/api/evidence/list")
+def list_evidence_files():
+    """List all evidence files with size, hash, and entropy score."""
+    files = []
+    if EVIDENCE_DIR.exists():
+        for f in sorted(EVIDENCE_DIR.glob("*")):
+            if f.is_file():
+                files.append(get_file_metadata(f))
+    return files
+
+
+@app.get("/api/evidence/hex")
+def view_evidence_hex(filename: str = Query(...), offset: int = Query(0), length: int = Query(2048)):
+    """Generate forensic hex dump for a specific evidence file."""
+    target = EVIDENCE_DIR / filename
+    if not target.exists():
+        raise HTTPException(status_code=404, detail="File not found")
+    return get_hex_dump(target, offset=offset, length=length)
+
+
+@app.get("/api/evidence/strings")
+def view_evidence_strings(
+    filename: str = Query(...),
+    min_length: int = Query(4),
+    filter: str = Query(None)
+):
+    """Extract printable strings from an evidence file with optional search filter."""
+    target = EVIDENCE_DIR / filename
+    if not target.exists():
+        raise HTTPException(status_code=404, detail="File not found")
+    return extract_strings(target, min_length=min_length, search_filter=filter)
+
+
+@app.post("/api/evidence/upload")
+async def upload_evidence(file: UploadFile = File(...)):
+    """Upload new evidence file into the case locker and sync hashes."""
+    EVIDENCE_DIR.mkdir(exist_ok=True)
+    target_path = EVIDENCE_DIR / file.filename
+    content = await file.read()
+    with open(target_path, "wb") as f:
+        f.write(content)
+
+    meta = get_file_metadata(target_path)
+    sync_evidence_items(EVIDENCE_DIR)
+
+    # Re-index assistant
+    init_rag_assistant(current_rag_model)
+
+    return {
+        "status": "success",
+        "message": f"Evidence '{file.filename}' uploaded and indexed.",
+        "metadata": meta
+    }
+
+
+# ---------------------------------------------------------------------------
+# 8. AI Incident Copilot & Consolidated Investigation Reporting
+# ---------------------------------------------------------------------------
+
+class ReportGenerateRequest(BaseModel):
+    model: str = "llama3.2:1b"
+
 
 @app.post("/api/report/generate")
-def run_report_generation(payload: dict):
-    model = payload.get("model", "llama3.2:1b")
-
-    evidence_dir = PROJECT_ROOT / "Evidence"
-    report_dir = PROJECT_ROOT / "Reports"
-    hash_file = PROJECT_ROOT / "Hashes" / "sha256_hashes.txt"
-    timeline_file = PROJECT_ROOT / "Timeline" / "timeline.txt"
-
-    if not evidence_dir.exists():
-        raise HTTPException(status_code=404, detail="Evidence directory not found")
-
-    report_dir.mkdir(exist_ok=True)
-    report_file = report_dir / "Investigation_Report.md"
-
-    # 1. Load Evidence
-    evidence_context = ""
-    for f in sorted(evidence_dir.glob("*")):
-        if f.is_file():
-            try:
-                content = f.read_text(encoding="utf-8", errors="ignore")
-                evidence_context += f"--- START FILE: {f.name} ---\n{content}\n--- END FILE: {f.name} ---\n\n"
-            except Exception:
-                pass
-
-    # 2. Load Hashes
-    hashes_content = ""
-    if hash_file.exists():
-        hashes_content = hash_file.read_text(encoding="utf-8")
-
-    # 3. Load Timeline
-    timeline_content = ""
-    if timeline_file.exists():
-        timeline_content = timeline_file.read_text(encoding="utf-8")
-
-    # 4. Generate Prompt
-    prompt = f"""
-You are a Senior Digital Forensics and Incident Response (DFIR) Specialist.
-Analyze the following digital forensic evidence files, their integrity hashes, and the artifact modification timeline.
-
-=== EVIDENCE FILES ===
-{evidence_context}
-
-=== EVIDENCE INTEGRITY HASHES ===
-{hashes_content}
-
-=== EVENT TIMELINE ===
-{timeline_content}
-
-Based on this evidence, generate a comprehensive, highly professional Executive Incident Report containing:
-1. EXECUTIVE SUMMARY: High-level summary of the security incident, suspected compromise, and investigator conclusions.
-2. EVIDENCE ACQUISITION & INTEGRITY: Table listing files analyzed, description of each file, and their SHA-256 hashes to guarantee chain of custody.
-3. TIMELINE OF EVENTS: Chronological analysis of activities based on the timeline and logs.
-4. KEY FINDINGS & ANALYSIS: Detailed findings identifying suspicious files, indicators of compromise (IOCs), threat actors, or simulated ransomware activity.
-5. RECOMMENDATIONS & INCIDENT RESPONSE ACTION PLAN: Actionable remediation steps for the organization.
-
-Structure the report clearly in Markdown. Be technical, professional, and thorough.
-"""
-
-    ai_response = query_ollama(prompt, model)
-
-    if ai_response.startswith("Error:"):
-        report_data = f"""# AI Cyber Forensics Investigation Report (Ollama Offline Fallback)
-
-Generated: {datetime.now()}
-
-## 1. Executive Summary
-A preliminary digital forensics investigation was conducted on collected workshop evidence files. The Ollama local AI model was offline at the time of dynamic generation.
-
-## 2. Evidence Acquisition & Integrity
-| File Name | SHA-256 Hash |
-| --- | --- |
-"""
-        for line in hashes_content.split("\n\n"):
-            if not line.strip():
-                continue
-            parts = line.strip().split("\n")
-            if len(parts) >= 2:
-                report_data += f"| `{parts[0]}` | `{parts[1]}` |\n"
-
-        report_data += f"""
-## 3. Timeline of Events
-Reflects file timestamps recorded in the workspace:
-```text
-{timeline_content.strip()}
-```
-
-## 4. Recommended Actions
-1. Ensure the Ollama service is running (`ollama serve`) and the Llama 3.2 model is downloaded (`ollama pull llama3.2:1b`).
-"""
-    else:
-        report_data = ai_response
-
+def generate_report_endpoint(payload: ReportGenerateRequest = None):
+    """Generate consolidated DFIR executive report in Markdown, HTML, and DOCX."""
+    model = payload.model if payload else "llama3.2:1b"
     try:
-        report_file.write_text(report_data, encoding="utf-8")
-        return {"status": "success", "model_used": model, "report": report_data}
+        return run_report_gen(model=model)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to write report: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
-
-# ---------------------------------------------------------------------------
-# /api/report/get
-# ---------------------------------------------------------------------------
 
 @app.get("/api/report/get")
 def get_report():
-    report_file = PROJECT_ROOT / "Reports" / "Investigation_Report.md"
-    if report_file.exists():
-        return {"exists": True, "report": report_file.read_text(encoding="utf-8")}
+    """Retrieve existing Investigation Report."""
+    md_file = REPORTS_DIR / "Investigation_Report.md"
+    html_file = REPORTS_DIR / "Investigation_Report.html"
+    json_file = REPORTS_DIR / "Investigation_Report.json"
+
+    if md_file.exists():
+        metadata = {}
+        if json_file.exists():
+            try:
+                metadata = json.loads(json_file.read_text(encoding="utf-8"))
+            except Exception:
+                pass
+        return {
+            "exists": True,
+            "report": md_file.read_text(encoding="utf-8"),
+            "has_html": html_file.exists(),
+            "metadata": metadata
+        }
     return {"exists": False, "report": ""}
 
 
+@app.get("/api/report/download/{fmt}")
+def download_report(fmt: str):
+    """Download the report in requested format: md, html, docx, json."""
+    files_map = {
+        "md": (REPORTS_DIR / "Investigation_Report.md", "text/markdown"),
+        "html": (REPORTS_DIR / "Investigation_Report.html", "text/html"),
+        "docx": (REPORTS_DIR / "Investigation_Report.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
+        "json": (REPORTS_DIR / "Investigation_Report.json", "application/json")
+    }
+
+    if fmt not in files_map:
+        raise HTTPException(status_code=400, detail="Invalid format. Supported: md, html, docx, json")
+
+    target, media_type = files_map[fmt]
+    if not target.exists():
+        # Trigger generation if not exists
+        run_report_gen()
+
+    if target.exists():
+        return FileResponse(
+            path=str(target),
+            media_type=media_type,
+            filename=target.name
+        )
+    raise HTTPException(status_code=404, detail=f"Report file {fmt} could not be found.")
+
+
 # ---------------------------------------------------------------------------
-# AI Forensic RAG Chatbot API Endpoints
+# 9. AI Forensic RAG Chatbot
 # ---------------------------------------------------------------------------
 
 @app.get("/api/chat/evidence")
 def get_chat_evidence():
-    evidence_dir = PROJECT_ROOT / "Evidence"
+    """Retrieve evidence files and sizes for chatbot context."""
     files = []
-    if evidence_dir.exists():
-        for file in sorted(evidence_dir.iterdir()):
+    if EVIDENCE_DIR.exists():
+        for file in sorted(EVIDENCE_DIR.iterdir()):
             if file.is_file():
                 files.append({
                     "name": file.name,
@@ -632,25 +618,8 @@ def get_chat_evidence():
 
 @app.post("/api/chat/upload")
 async def upload_chat_evidence(file: UploadFile = File(...)):
-    evidence_dir = PROJECT_ROOT / "Evidence"
-    evidence_dir.mkdir(exist_ok=True)
-    
-    file_path = evidence_dir / file.filename
-    content = await file.read()
-    with open(file_path, "wb") as f:
-        f.write(content)
-        
-    # Re-index the evidence
-    try:
-        from rag_assistant.create_embeddings import create_vector_database
-        create_vector_database()
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to index evidence: {e}")
-        
-    # Reinitialize the assistant
-    init_rag_assistant(current_rag_model)
-    
-    return {"message": f"Successfully uploaded and indexed {file.filename}"}
+    """Upload and re-index evidence for the chatbot."""
+    return await upload_evidence(file)
 
 
 class ChatRequest(BaseModel):
@@ -660,25 +629,24 @@ class ChatRequest(BaseModel):
 
 @app.post("/api/chat/query")
 def chat_query(request: ChatRequest):
+    """Interactive natural language Q&A against forensic evidence."""
     global rag_assistant, current_rag_model
-    
-    # Switch model if requested and different
+
     if request.model and request.model != current_rag_model:
         init_rag_assistant(request.model)
-        
+
     if not rag_assistant:
-        # Try initializing again
         init_rag_assistant(current_rag_model)
-        
+
     if not rag_assistant:
-        raise HTTPException(status_code=503, detail="RAG Assistant is not initialized. Please ensure Ollama is running.")
-        
+        raise HTTPException(status_code=503, detail="RAG Assistant could not be initialized.")
+
     try:
         import time
         start = time.time()
         answer, sources, confidence = rag_assistant.ask(request.question)
         elapsed = time.time() - start
-        
+
         return {
             "answer": answer,
             "sources": sources,
@@ -691,7 +659,7 @@ def chat_query(request: ChatRequest):
 
 
 # ---------------------------------------------------------------------------
-# Mount Web GUI static folder after all API endpoints
+# 10. Mount Web GUI static folder
 # ---------------------------------------------------------------------------
 
 gui_dir = PROJECT_ROOT / "web_gui"
@@ -701,3 +669,10 @@ else:
     @app.get("/")
     def read_root():
         return HTMLResponse("<h1>Web GUI Static Directory Not Found</h1>")
+
+if __name__ == "__main__":
+    import uvicorn
+    port = int(os.environ.get("PORT", 8000))
+    host = os.environ.get("HOST", "0.0.0.0")
+    print(f"Starting AgenticDFIR server on {host}:{port}...")
+    uvicorn.run("gui_app:app", host=host, port=port, reload=False)

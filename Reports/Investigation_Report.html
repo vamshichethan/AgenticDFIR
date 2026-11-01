@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Forensic Investigation Report</title>
+<style>
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.6;
+    color: #e0e6ed;
+    background-color: #0b0f19;
+    padding: 40px;
+    max-width: 1000px;
+    margin: 0 auto;
+}
+.report-h1 {
+    color: #00e5ff;
+    border-bottom: 2px solid #1e293b;
+    padding-bottom: 12px;
+    margin-top: 20px;
+}
+.report-h2 {
+    color: #38bdf8;
+    margin-top: 32px;
+    border-bottom: 1px solid #1e293b;
+    padding-bottom: 8px;
+}
+.report-h3 {
+    color: #a855f7;
+    margin-top: 24px;
+}
+.table-container {
+    overflow-x: auto;
+    margin: 20px 0;
+}
+.report-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+.report-table th, .report-table td {
+    border: 1px solid #334155;
+    padding: 10px 14px;
+    text-align: left;
+}
+.report-table th {
+    background-color: #1e293b;
+    color: #38bdf8;
+    font-weight: 600;
+}
+.report-table tr:nth-child(even) {
+    background-color: #111827;
+}
+code {
+    background: #1e293b;
+    color: #00e5ff;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 12px;
+}
+pre {
+    background: #111827;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    padding: 14px;
+    overflow-x: auto;
+}
+hr.report-divider {
+    border: 0;
+    height: 1px;
+    background: #334155;
+    margin: 30px 0;
+}
+@media print {
+    body {
+        background: #fff;
+        color: #000;
+        padding: 15px;
+    }
+    .report-h1, .report-h2, .report-h3 { color: #000; }
+    .report-table th { background: #eee; color: #000; }
+    code { background: #f0f0f0; color: #000; }
+}
+</style>
+</head>
+<body>
+<h1 class="report-h1">DIGITAL FORENSICS & INCIDENT RESPONSE (DFIR) EXECUTIVE REPORT</h1>
+<p><strong>Case Reference:</strong> CASE-2026-DFIR-001  </p>
+<p><strong>Incident Classification:</strong> Unauthorized Access & Sensitive Database Exfiltration  </p>
+<p><strong>Severity Level:</strong> 🔴 CRITICAL  </p>
+<p><strong>Investigation Date:</strong> 2026-11-01 22:02:35  </p>
+<p><strong>Lead Investigator:</strong> DFIR Specialist / CSRL Security Unit  </p>
+<hr class='report-divider'>
+<h2 class="report-h2">1. Executive Summary</h2>
+<p>On <strong>07 July 2026</strong>, the Security Operations Center (SOC) detected an advanced security compromise involving corporate VPN access and unauthorized outbound HTTPS traffic from the Finance Server (<strong>SRV-FIN-01</strong>, IP <code>10.10.15.25</code>). </p>
+<p>A multi-source forensic investigation correlating firewall access logs, Linux operating system auth logs, and VPN gateway authentication records confirmed that:</p>
+<li class="report-numbered">An external threat actor operating from IP <code>203.45.18.101</code> conducted targeted brute-force / password spraying attacks against user account <code>j.smith</code>.</li>
+<li class="report-numbered">Following five failed attempts, unauthorized VPN access was successfully established at <strong>14:20:22 IST</strong>.</li>
+<li class="report-numbered">Within seconds (<strong>14:20:35 IST</strong>), the attacker moved laterally via SSH to the Finance Server using VPN assigned tunnel IP <code>10.10.1.5</code>.</li>
+<li class="report-numbered">The adversary executed automated reconnaissance script <code>finance_export.sh</code>, dumping relational tables (<code>billing_details</code> and <code>transactions_2026</code>) from the local PostgreSQL database.</li>
+<p>5. The extracted database records were compressed into an encrypted archive (<code>archive.zip</code>, <strong>45.2 MB</strong>) and exfiltrated to an external Command & Control (C2) server at IP <code>198.51.100.20</code> over HTTPS (Port 443).</p>
+<p>6. Prior to disconnecting, the adversary attempted outbound lateral pivoting to <code>45.33.18.7:22</code>, which was actively blocked by perimeter firewall security policies.</p>
+<hr class='report-divider'>
+<h2 class="report-h2">2. Evidence Acquisition & Chain of Custody Integrity</h2>
+<p>All digital artifacts were preserved under forensic standards. Cryptographic hashes (MD5 and SHA-256) and Shannon Entropy metrics were calculated to guarantee evidence non-repudiation and detect data tampering.</p>
+<div class="table-container"><table class="report-table"><thead><tr>
+<th>Artifact Filename</th>
+<th>Size</th>
+<th>MD5 Checksum</th>
+<th>SHA-256 Checksum</th>
+<th>Entropy Score</th>
+</tr></thead><tbody>
+<tr>
+<td><code>email_thread.txt</code></td>
+<td>560 B</td>
+<td><code>41b75580094ed62ad42c715a29122c11</code></td>
+<td><code>848645ae2cc7e016de8f7033950daf26a2d87efae800c8ad5f5b6f5eb2644a4e</code></td>
+<td>4.6761 (Low)</td>
+</tr>
+<tr>
+<td><code>firewall.log</code></td>
+<td>1540 B</td>
+<td><code>d4ca5d3b14923ef39422110af0b75b0e</code></td>
+<td><code>2b31b846737a5aaa661ba11b52cab5a8432567a27d3bea35f78907ab539ae70a</code></td>
+<td>4.7487 (Low)</td>
+</tr>
+<tr>
+<td><code>incident_report.txt</code></td>
+<td>978 B</td>
+<td><code>ff86de1b1c1793ead536a587b5de9d6c</code></td>
+<td><code>c8603da8191645c2f78d428d7b0b980a2888bac6c27eb89cce409350264aba6d</code></td>
+<td>4.9366 (Low)</td>
+</tr>
+<tr>
+<td><code>invoice.txt</code></td>
+<td>518 B</td>
+<td><code>522fdf523dda7e304753cbf7c28e0e12</code></td>
+<td><code>eb8bb942c434c8bbe204062961d344b52dbc429552d4bddf322b9fb2e92730f7</code></td>
+<td>4.2292 (Low)</td>
+</tr>
+<tr>
+<td><code>meeting_minutes.txt</code></td>
+<td>735 B</td>
+<td><code>927df5c4473c0da6ce05566fd8ca9795</code></td>
+<td><code>61309662c920ba98661b390843fa7ea331b74e02d0aacad01f54f8e189d62290</code></td>
+<td>4.697 (Low)</td>
+</tr>
+<tr>
+<td><code>phishing_email.txt</code></td>
+<td>703 B</td>
+<td><code>1c9a8de1edf0070128e312acf4418382</code></td>
+<td><code>7f8820052250c84aee3486a00e89297c63d115dd7faa6d5e08df0e92cc8c8f0e</code></td>
+<td>4.5621 (Low)</td>
+</tr>
+<tr>
+<td><code>ransomware_note.txt</code></td>
+<td>615 B</td>
+<td><code>17b929ac174b92d67ed695d511ee0ee9</code></td>
+<td><code>6959858bb313305cf293f24ec62ed79b040814ad2ab1010c402d7d369e5de06d</code></td>
+<td>4.4827 (Low)</td>
+</tr>
+<tr>
+<td><code>system.log</code></td>
+<td>1557 B</td>
+<td><code>d8b61854ed22e5a81186bfa6bd57cf58</code></td>
+<td><code>fd35d229a32f5fa99c30ea2389e687e0f81c7e7ba4b477b84d22aca86b522335</code></td>
+<td>5.2263 (Medium)</td>
+</tr>
+<tr>
+<td><code>vpn.log</code></td>
+<td>1442 B</td>
+<td><code>ce89dbb27edab6a9782c45d9b8c863aa</code></td>
+<td><code>b7353260b4459bc516db0f7be0e225a4a072cea1906999dda83717bf9c273301</code></td>
+<td>5.0739 (Medium)</td>
+</tr>
+</tbody></table></div>
+<hr class='report-divider'>
+<h2 class="report-h2">3. Cyber Kill Chain & Attack Chronology</h2>
+<p>The reconstructed timeline establishes the following coordinated sequence of adversary operations:</p>
+<div class="table-container"><table class="report-table"><thead><tr>
+<th>Timestamp (IST)</th>
+<th>Severity</th>
+<th>Kill Chain Stage</th>
+<th>Source</th>
+<th>Event Description</th>
+</tr></thead><tbody>
+<tr>
+<td>2026-07-07 14:18:43</td>
+<td><strong>HIGH</strong></td>
+<td>Credential Access / Brute Force</td>
+<td>VPN Gateway</td>
+<td>VPN LOGIN FAILED for user 'j.smith' from IP 203.45.18.101</td>
+</tr>
+<tr>
+<td>2026-07-07 14:19:11</td>
+<td><strong>HIGH</strong></td>
+<td>Credential Access / Brute Force</td>
+<td>VPN Gateway</td>
+<td>VPN LOGIN FAILED for user 'j.smith' from IP 203.45.18.101</td>
+</tr>
+<tr>
+<td>2026-07-07 14:19:54</td>
+<td><strong>HIGH</strong></td>
+<td>Credential Access / Brute Force</td>
+<td>VPN Gateway</td>
+<td>VPN LOGIN FAILED for user 'j.smith' from IP 203.45.18.101</td>
+</tr>
+<tr>
+<td>2026-07-07 14:20:22</td>
+<td><strong>CRITICAL</strong></td>
+<td>Initial Access</td>
+<td>VPN Gateway</td>
+<td>VPN LOGIN SUCCESS for user 'j.smith' from IP 203.45.18.101</td>
+</tr>
+<tr>
+<td>2026-07-07 14:20:35</td>
+<td><strong>HIGH</strong></td>
+<td>Initial Access</td>
+<td>System</td>
+<td>[SRV-FIN-01] sshd[1402]: SSH login accepted for user j.smith from 10.10.1.5</td>
+</tr>
+<tr>
+<td>2026-07-07 14:20:40</td>
+<td><strong>HIGH</strong></td>
+<td>Initial Access</td>
+<td>Firewall</td>
+<td>Firewall ALLOW TCP from 203.45.18.101:54320 to 10.10.15.25:22 - SSH Inbound via VPN</td>
+</tr>
+<tr>
+<td>2026-07-07 14:22:17</td>
+<td><strong>CRITICAL</strong></td>
+<td>Collection & Staging</td>
+<td>System</td>
+<td>[SRV-FIN-01] bash[1421]: finance_export.sh executed by j.smith</td>
+</tr>
+<tr>
+<td>2026-07-07 14:22:18</td>
+<td><strong>HIGH</strong></td>
+<td>Collection & Staging</td>
+<td>System</td>
+<td>[SRV-FIN-01] postgres[1425]: query: SELECT * FROM billing_details LIMIT 10000;</td>
+</tr>
+<tr>
+<td>2026-07-07 14:22:50</td>
+<td><strong>HIGH</strong></td>
+<td>Collection & Staging</td>
+<td>System</td>
+<td>[SRV-FIN-01] postgres[1425]: query: SELECT * FROM transactions_2026;</td>
+</tr>
+<tr>
+<td>2026-07-07 14:23:51</td>
+<td><strong>CRITICAL</strong></td>
+<td>Collection & Staging</td>
+<td>System</td>
+<td>[SRV-FIN-01] bash[1430]: zip -r archive.zip /tmp/finance_export/</td>
+</tr>
+<tr>
+<td>2026-07-07 14:23:52</td>
+<td><strong>CRITICAL</strong></td>
+<td>Collection & Staging</td>
+<td>System</td>
+<td>[SRV-FIN-01] kernel: archive.zip created, size: 45.2 MB</td>
+</tr>
+<tr>
+<td>2026-07-07 14:24:12</td>
+<td><strong>CRITICAL</strong></td>
+<td>Exfiltration</td>
+<td>System</td>
+<td>[SRV-FIN-01] curl[1445]: HTTPS connection established to 198.51.100.20</td>
+</tr>
+<tr>
+<td>2026-07-07 14:25:00</td>
+<td><strong>HIGH</strong></td>
+<td>Incident Detection</td>
+<td>SOC Advisory</td>
+<td>Incident IR-2026-0710: Suspected compromise of user 'j.smith' credentials and outbound HTTPS exfiltration.</td>
+</tr>
+<tr>
+<td>2026-07-07 14:31:10</td>
+<td><strong>CRITICAL</strong></td>
+<td>Exfiltration</td>
+<td>System</td>
+<td>[SRV-FIN-01] curl[1445]: archive.zip upload completed, HTTP 200 OK</td>
+</tr>
+<tr>
+<td>2026-07-07 14:32:10</td>
+<td><strong>CRITICAL</strong></td>
+<td>Exfiltration</td>
+<td>Firewall</td>
+<td>Firewall ALLOW TCP from 10.10.15.25:49811 to 198.51.100.20:443 - HTTPS Outbound Exfil</td>
+</tr>
+<tr>
+<td>2026-07-07 14:33:15</td>
+<td><strong>CRITICAL</strong></td>
+<td>Exfiltration</td>
+<td>Firewall</td>
+<td>Firewall ALLOW TCP from 10.10.15.25:49812 to 198.51.100.20:443 - HTTPS Outbound Exfil</td>
+</tr>
+<tr>
+<td>2026-07-07 14:34:21</td>
+<td><strong>CRITICAL</strong></td>
+<td>Exfiltration</td>
+<td>Firewall</td>
+<td>Firewall ALLOW TCP from 10.10.15.25:49813 to 198.51.100.20:443 - HTTPS Outbound Exfil</td>
+</tr>
+<tr>
+<td>2026-07-07 14:36:02</td>
+<td><strong>CRITICAL</strong></td>
+<td>Exfiltration</td>
+<td>Firewall</td>
+<td>Firewall ALLOW TCP from 10.10.15.25:49814 to 198.51.100.20:443 - HTTPS Outbound Exfil</td>
+</tr>
+<tr>
+<td>2026-07-07 14:40:15</td>
+<td><strong>HIGH</strong></td>
+<td>Lateral Movement / C2</td>
+<td>Firewall</td>
+<td>Firewall DENY TCP from 10.10.15.25:49815 to 45.33.18.7:22 - SSH Outbound Blocked</td>
+</tr>
+<tr>
+<td>2026-07-07 14:40:15</td>
+<td><strong>HIGH</strong></td>
+<td>Lateral Movement / C2</td>
+<td>System</td>
+<td>[SRV-FIN-01] ssh[1512]: Connect to 45.33.18.7 port 22 failed: Connection refused</td>
+</tr>
+<tr>
+<td>2026-07-07 14:43:11</td>
+<td><strong>CRITICAL</strong></td>
+<td>Exfiltration</td>
+<td>Firewall</td>
+<td>Firewall ALLOW TCP from 10.10.15.25:49816 to 198.51.100.20:443 - HTTPS Outbound Exfil</td>
+</tr>
+<tr>
+<td>2026-07-07 15:30:00</td>
+<td><strong>HIGH</strong></td>
+<td>Incident Detection</td>
+<td>Email Communication</td>
+<td>SOC Manager escalates urgent alert regarding user 'j.smith' and unauthorized Finance Server outbound HTTPS connections.</td>
+</tr>
+</tbody></table></div>
+<h3 class="report-h3">Key Incident Milestones:</h3>
+<li class="report-li"><strong>14:02:55 - 14:03:25</strong>: Preliminary reconnaissance and brute-force probing against generic accounts (<code>admin</code>, <code>administrator</code>, <code>root</code>) from IP <code>198.51.100.5</code>.</li>
+<li class="report-li"><strong>14:18:02 - 14:19:54</strong>: Targeted credential brute-forcing targeting employee <code>j.smith</code> from external IP <code>203.45.18.101</code> (5 consecutive failures).</li>
+<li class="report-li"><strong>14:20:22</strong>: Adversary achieves successful VPN session authentication.</li>
+<li class="report-li"><strong>14:20:35</strong>: SSH session accepted on <code>SRV-FIN-01</code> from VPN assigned IP <code>10.10.1.5</code>.</li>
+<li class="report-li"><strong>14:22:17 - 14:23:52</strong>: Execution of <code>finance_export.sh</code>, unauthorized SQL queries dumping billing tables, and creation of <code>archive.zip</code> (45.2 MB).</li>
+<li class="report-li"><strong>14:24:12 - 14:31:10</strong>: Exfiltration upload to <code>198.51.100.20</code> completed via curl HTTPS.</li>
+<li class="report-li"><strong>14:35:44</strong>: Adversary closes SSH connection; attempts outbound SSH to secondary pivot IP <code>45.33.18.7</code> at 14:40:15 (blocked by firewall policy).</li>
+<hr class='report-divider'>
+<h2 class="report-h2">4. Indicators of Compromise (IOC) Analysis</h2>
+<p>The investigation identified high-fidelity threat indicators classified as follows:</p>
+<div class="table-container"><table class="report-table"><thead><tr>
+<th>Indicator / IP</th>
+<th>Threat Level</th>
+<th>Strategic Role</th>
+<th>Forensic Context</th>
+</tr></thead><tbody>
+<tr>
+<td><code>198.51.100.20</code></td>
+<td>MALICIOUS</td>
+<td>External C2 & Exfiltration Destination</td>
+<td>Receives stolen corporate database archive (archive.zip 45.2 MB) via HTTPS curl upload.</td>
+</tr>
+<tr>
+<td><code>203.45.18.101</code></td>
+<td>MALICIOUS</td>
+<td>Attacker Source / VPN Brute Force</td>
+<td>Origin of 5 consecutive failed logins followed by compromised VPN session for user 'j.smith'.</td>
+</tr>
+<tr>
+<td><code>198.51.100.5</code></td>
+<td>SUSPICIOUS</td>
+<td>Password Spraying Probe</td>
+<td>Reconnaissance login attempts for admin, administrator, root.</td>
+</tr>
+<tr>
+<td><code>45.33.18.7</code></td>
+<td>SUSPICIOUS</td>
+<td>Secondary C2 / Lateral Movement Target</td>
+<td>Target of denied outbound SSH connection attempt from SRV-FIN-01.</td>
+</tr>
+<tr>
+<td><code>10.10.15.25</code></td>
+<td>COMPROMISED_HOST</td>
+<td>Finance Server (SRV-FIN-01)</td>
+<td>Internal server compromised via SSH session; database dumped and exfiltrated.</td>
+</tr>
+<tr>
+<td><code>10.10.1.5</code></td>
+<td>COMPROMISED_TUNNEL</td>
+<td>VPN Assigned Tunnel IP</td>
+<td>Internal VPN tunnel address assigned to attacker masquerading as j.smith.</td>
+</tr>
+</tbody></table></div>
+<hr class='report-divider'>
+<h2 class="report-h2">5. MITRE ATT&CK Enterprise Matrix Alignment</h2>
+<div class="table-container"><table class="report-table"><thead><tr>
+<th>Tactic</th>
+<th>Technique ID</th>
+<th>Technique Name</th>
+<th>Forensic Evidence</th>
+<th>Observed Artifact</th>
+</tr></thead><tbody>
+<tr>
+<td>Initial Access</td>
+<td><code>T1078.002</code></td>
+<td><strong>Valid Accounts: Domain Accounts</strong></td>
+<td>Attacker gained entry using authenticated credentials for user 'j.smith' across the corporate VPN.</td>
+<td>vpn.log & incident_report.txt</td>
+</tr>
+<tr>
+<td>Credential Access</td>
+<td><code>T1110.001</code></td>
+<td><strong>Brute Force: Password Spraying</strong></td>
+<td>Five failed authentication attempts recorded from IP 203.45.18.101 within 2 minutes preceding successful login.</td>
+<td>vpn.log</td>
+</tr>
+<tr>
+<td>Lateral Movement</td>
+<td><code>T1021.004</code></td>
+<td><strong>Remote Services: SSH</strong></td>
+<td>Attacker traversed from VPN gateway (10.10.1.5) to Finance Server SRV-FIN-01 (10.10.15.25) over SSH.</td>
+<td>system.log & firewall.log</td>
+</tr>
+<tr>
+<td>Execution</td>
+<td><code>T1059.004</code></td>
+<td><strong>Command and Scripting Interpreter: Unix Shell</strong></td>
+<td>Execution of finance_export.sh via bash session to query PostgreSQL database.</td>
+<td>system.log</td>
+</tr>
+<tr>
+<td>Collection</td>
+<td><code>T1560.001</code></td>
+<td><strong>Archive Collected Data: Archive via Utility</strong></td>
+<td>Compression of billing details and transactions into archive.zip (45.2 MB) using zip utility.</td>
+<td>system.log</td>
+</tr>
+<tr>
+<td>Exfiltration</td>
+<td><code>T1048.002</code></td>
+<td><strong>Exfiltration Over Alternative Protocol: Symmetric Encrypted Non-C2 Protocol</strong></td>
+<td>Stolen database archive transmitted to external IP 198.51.100.20 via HTTPS curl upload.</td>
+<td>system.log & firewall.log</td>
+</tr>
+<tr>
+<td>Command and Control</td>
+<td><code>T1571</code></td>
+<td><strong>Non-Standard Port / Outbound C2</strong></td>
+<td>Attempted outbound connection to 45.33.18.7:22 blocked by network firewall.</td>
+<td>firewall.log & system.log</td>
+</tr>
+</tbody></table></div>
+<hr class='report-divider'>
+<h2 class="report-h2">6. Root Cause & Impact Assessment</h2>
+<li class="report-li"><strong>Root Cause:</strong> Absence of Multi-Factor Authentication (MFA) and aggressive IP lockouts on the external VPN portal allowed brute-force credential stuffing.</li>
+<li class="report-li"><strong>Compromised User:</strong> <code>j.smith</code> (Corporate domain account).</li>
+<li class="report-li"><strong>Compromised Infrastructure:</strong> Finance Database Server (<code>SRV-FIN-01</code> / <code>10.10.15.25</code>).</li>
+<li class="report-li"><strong>Data Exfiltrated:</strong> Corporate financial transactions and billing customer records (~45.2 MB compressed SQL data).</li>
+<li class="report-li"><strong>Business Impact:</strong> High risk of customer data exposure, regulatory non-compliance, and proprietary business intelligence theft.</li>
+<hr class='report-divider'>
+<h2 class="report-h2">7. Immediate Containment & Incident Response Action Plan</h2>
+<h3 class="report-h3">Immediate Containment Steps (Hours 0 - 4):</h3>
+<li class="report-numbered"><strong>Revoke Compromised Credentials:</strong> Immediately terminate active sessions and reset credentials for account <code>j.smith</code> across Active Directory and VPN.</li>
+<li class="report-numbered"><strong>Network Isolation:</strong> Temporarily isolate <code>SRV-FIN-01</code> from the internal network for offline disk image preservation.</li>
+<li class="report-numbered"><strong>Perimeter Firewall Blacklisting:</strong> Block all inbound and outbound traffic to adversary IPs:</li>
+<p>   - <code>198.51.100.20</code> (C2 Exfiltration Target)</p>
+<p>   - <code>203.45.18.101</code> (Attacker VPN Ingress)</p>
+<p>   - <code>45.33.18.7</code> (Secondary Pivot)</p>
+<p>   - <code>198.51.100.5</code> (Probing Host)</p>
+<h3 class="report-h3">Eradication & Hardening (Hours 4 - 24):</h3>
+<li class="report-numbered"><strong>Mandatory MFA:</strong> Enforce hardware token or authenticator-based Multi-Factor Authentication (MFA) on all external VPN endpoints.</li>
+<li class="report-numbered"><strong>Account Lockout Policies:</strong> Implement account lockout policies after 3 failed consecutive login attempts within a 15-minute window.</li>
+<li class="report-numbered"><strong>Database Access Restriction:</strong> Restrict direct SQL execution and database export permissions; disable interactive shell utilities (<code>curl</code>, <code>nc</code>, <code>zip</code>) for standard database users.</li>
+<li class="report-numbered"><strong>Enhanced SIEM Detection Rules:</strong> Implement real-time alerts for:</li>
+<p>   - Successful VPN logins originating from outside standard geographic regions.</p>
+<p>   - Sudden high-volume outbound data transfers (> 10 MB) from database servers to unfamiliar external IPs.</p>
+<hr class='report-divider'>
+<p>*Report generated automatically by the AI Cyber Forensics & Incident Response Platform.*</p>
+</body>
+</html>

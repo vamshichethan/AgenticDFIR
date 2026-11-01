@@ -1,71 +1,56 @@
 """
-Artifact Discovery Module
+Forensic Artifact Discovery Module
+Discovers live host artifacts, persistence mechanisms, user accounts, and AI runtime metadata.
 """
 
-import os
 import platform
-import subprocess
 from pathlib import Path
+from forensic_toolkit.utils import log
+from forensic_toolkit.live_forensics import analyze_persistence, analyze_user_accounts, get_live_system_metrics
 from forensic_toolkit.ollama_info import get_ollama_path
 
 
-def run(cmd):
-    try:
-        result = subprocess.run(
-            cmd,
-            shell=True,
-            capture_output=True,
-            text=True
-        )
-        return result.stdout
-    except Exception as e:
-        return str(e)
-
-
 def collect_artifacts():
-    print("\n" + "=" * 60)
-    print("AI ARTIFACT DISCOVERY")
-    print("=" * 60)
+    log("Forensic Artifact Discovery Run")
+    print("\n" + "=" * 70)
+    print("DIGITAL FORENSIC ARTIFACT DISCOVERY")
+    print("=" * 70)
 
-    ollama_cmd = get_ollama_path()
+    # 1. System Telemetry
+    sys_m = get_live_system_metrics()
+    print(f"\n1. System Profile: {sys_m['hostname']} ({sys_m['os']} {sys_m['release']})")
+    print(f"   Uptime: {sys_m['uptime']} | Boot: {sys_m['boot_time']}")
+    print(f"   CPUs: {sys_m['cpu_count_logical']} Logical | RAM: {sys_m['memory']['used_gb']}/{sys_m['memory']['total_gb']} GB")
 
-    print("\n1. Ollama Installation")
-    if platform.system() == "Windows":
-        # Resolve path using 'where' command or fall back to the path we retrieved
-        where_out = run(f"where {ollama_cmd}").strip()
-        print(where_out if where_out else ollama_cmd)
+    # 2. Persistence / Autoruns
+    persist = analyze_persistence()
+    print(f"\n2. Persistence & Autorun Hooks ({persist['total_autoruns']} artifacts discovered)")
+    print("-" * 70)
+    for a in persist["autoruns"][:15]:
+        print(f"   [{a['type']}] {a['name']:<25} ({a['location']})")
+
+    # 3. User Accounts
+    users = analyze_user_accounts()
+    print(f"\n3. User Sessions & Accounts")
+    print("-" * 70)
+    if users["active_sessions"]:
+        for s in users["active_sessions"]:
+            print(f"   Active Session: User '{s['username']}' on {s['terminal']} from {s['host']} (since {s['started']})")
     else:
-        which_out = run(f"which {ollama_cmd}").strip()
-        print(which_out if which_out else ollama_cmd)
+        print("   No active remote sessions detected.")
 
-    print("\n2. Installed Models")
-    print(run(f"{ollama_cmd} list"))
+    if users["interactive_accounts"]:
+        print(f"   Interactive System Users ({len(users['interactive_accounts'])}):")
+        for u in users["interactive_accounts"][:8]:
+            print(f"    - {u['username']} (UID: {u['uid']}, Home: {u['home']}, Shell: {u['shell']})")
 
-    print("\n3. Model Directory")
+    # 4. AI Runtime Artifacts
+    print("\n4. AI Runtime & Local Model Artifacts")
+    print("-" * 70)
+    ollama_cmd = get_ollama_path()
     home = Path.home()
     model_path = home / ".ollama"
+    print(f"   Ollama Command: {ollama_cmd}")
+    print(f"   Model Directory: {model_path} ({'Exists' if model_path.exists() else 'Not Found'})")
 
-    if model_path.exists():
-        print(model_path)
-    else:
-        print("Directory not found")
-
-    print("\n4. Model Files")
-    if model_path.exists():
-        # Traverse filesystem dynamically using Python's os.walk to keep it cross-platform
-        files_found = []
-        for root, _, files in os.walk(model_path):
-            for file in files:
-                files_found.append(os.path.join(root, file))
-        
-        if files_found:
-            for f in files_found[:20]:  # Limit output to 20 files
-                print(f)
-            if len(files_found) > 20:
-                print(f"\n... and {len(files_found) - 20} more files.")
-        else:
-            print("No model files found.")
-    else:
-        print("Model directory not found.")
-
-    input("\nPress Enter...")
+    input("\nPress Enter to continue...")
