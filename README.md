@@ -4,16 +4,19 @@
 
 ### *Autonomous, Air-Gapped DFIR Intelligence • Live System Telemetry • Forensic Super-Timeline • MITRE ATT&CK Mapping • Hybrid RAG*
 
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-agentic--dfir.onrender.com-00C7B7?style=for-the-badge&logo=render&logoColor=white)](https://agentic-dfir.onrender.com)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.100%2B-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![Docker](https://img.shields.io/badge/Docker-Enabled-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
-[![Render](https://img.shields.io/badge/Render-Deployable-46E3B7?style=for-the-badge&logo=render&logoColor=black)](https://render.com/)
+[![Render](https://img.shields.io/badge/Render-Deployed-46E3B7?style=for-the-badge&logo=render&logoColor=black)](https://dashboard.render.com/web/srv-dbjmmi942hec73dg4q80)
 [![Ollama](https://img.shields.io/badge/Ollama-Offline%20LLM-000000?style=for-the-badge&logo=ollama&logoColor=white)](https://ollama.com/)
 [![MIT License](https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge)](LICENSE)
 
 <br/>
 
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy)
+🌐 **Live Cloud Deployment:** [https://agentic-dfir.onrender.com](https://agentic-dfir.onrender.com)  
+📊 **Interactive API Docs:** [https://agentic-dfir.onrender.com/docs](https://agentic-dfir.onrender.com/docs)  
+🚀 **Render Dashboard:** [https://dashboard.render.com/web/srv-dbjmmi942hec73dg4q80](https://dashboard.render.com/web/srv-dbjmmi942hec73dg4q80)
 
 <br/>
 
